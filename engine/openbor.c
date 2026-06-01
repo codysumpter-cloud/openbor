@@ -4306,21 +4306,21 @@ void cachesound(int index, int load)
 //
 // index: Target index in the sprite list.
 // load: Load 1, or unload 0 the target sprite index.
-void cachesprite(int index, int load)
-{
+void cachesprite(int index, int load) {
+
     s_sprite *sprite;           // Sprite placeholder.
     s_sprite_list *map_node;    // Sprite map node placeholder.
 
     // Valid sprite list?
-    if(sprite_map)
-    {
+    if(sprite_map) {
+
         // Index argument valid?
-        if(index >= 0)
-        {
+        if(index >= 0) {
+
             // Index argument should be more than
             // the number of sprites loaded.
-            if(index < sprites_loaded)
-            {
+            if(index < sprites_loaded) {
+
                 // Get the sprite list node from sprite maps
                 // using our target index.
                 map_node = sprite_map[index].node;
@@ -4329,28 +4329,28 @@ void cachesprite(int index, int load)
                 // a sprite and assign it the target index.
                 // Otherwise, we want to free a sprite with
                 // target index.
-                if(load)
-                {
+                if(load) {
+
                     // Make sure there is not already
                     // a sprite with our target index.
                     sprite = map_node->sprite;
 
-                    if(!sprite)
-                    {
+                    if(!sprite) {
+
                         // Load the sprite file, then assign its
                         // new pointer to the sprite map using our
                         // index for the sprite map position.
                         sprite = loadsprite2(map_node->filename, NULL, NULL);
                         map_node->sprite = sprite;
                     }
-                }
-                else if(!load)
-                {
+
+                } else if(!load) {
+
                     // Does the target sprite exist?
                     sprite = map_node->sprite;
 
-                    if(sprite)
-                    {
+                    if(sprite) {
+
                         // Free the target sprite's resources, then remove
                         // its pointer from sprite map.
                         free(sprite);
@@ -4364,94 +4364,176 @@ void cachesprite(int index, int load)
     }
 }
 
-// Returns sprite index.
-// Does not return on error, as it would shut the program down.
-// UT:
-// bmpformat - In 24bit mode, a sprite can have a 24bit palette(e.g., panel),
-//             so add this paramter to let sprite encoding function know.
-//             Actually the sprite pixel encoding method is the same, but a
-//             24bit palettte sprite should have a palette allocated at the end of
-//             pixel data, and the information is carried by the bitmap paramter.
-int loadsprite(char *filename, int ofsx, int ofsy, int bmpformat)
-{
-    ptrdiff_t i, size, len;
-    s_bitmap *bitmap = NULL;
-    int clipl, clipr, clipt, clipb;
-    s_sprite_list *curr = NULL, *head = NULL, *toshare = NULL;
+/*
+* Caskey, Damon V.
+* Original date and author unknown, reworked 2026-06-01.
+*
+* Loads a sprite from disk or the active pack file, encodes
+* it into the internal sprite format, and returns the sprite
+* index. If the same source image and offset were previously
+* loaded, the existing sprite index is returned.
+*
+* Hard fails on load or allocation failure and sends error
+* to log.
+*/
+int loadsprite(char *filename, int offset_x, int offset_y, int bmpformat) {
 
-    for(i = 0; i < sprites_loaded; i++)
-    {
-        if(sprite_map && sprite_map[i].node)
-        {
-            if(stricmp(sprite_map[i].node->filename, filename) == 0)
-            {
-                if(!sprite_map[i].node->sprite)
-                {
+    ptrdiff_t i;
+    ptrdiff_t size;
+    ptrdiff_t len;
+    s_bitmap *bitmap = NULL;
+    int clip_left; 
+    int clip_right; 
+    int clip_top; 
+    int clip_bottom;
+    s_sprite_list *curr = NULL;
+    s_sprite_list *head = NULL;
+    s_sprite_list *toshare = NULL;
+
+    /*
+    * Look for an already loaded copy of this sprite.
+    * Sprites with the same source image can share pixel data,
+    * but may still need separate sprite map entries if they use
+    * different offsets.
+    */
+    for(i = 0; i < sprites_loaded; i++) {
+        if(sprite_map && sprite_map[i].node) {
+            if(stricmp(sprite_map[i].node->filename, filename) == 0) {
+
+                /*
+                * Some shared sprite nodes may exist without encoded
+                * sprite data loaded yet. Load it on demand before
+                * checking offset values.
+                */
+                if(!sprite_map[i].node->sprite) {
                     sprite_map[i].node->sprite = loadsprite2(filename, NULL, NULL);
                 }
-                if(sprite_map[i].centerx + sprite_map[i].node->sprite->offsetx == ofsx &&
-                        sprite_map[i].centery + sprite_map[i].node->sprite->offsety == ofsy)
-                {
+
+                /*
+                * The sprite map stores center coordinates relative to
+                * the clipped sprite offset. If the requested offset
+                * matches an existing entry, return that sprite index.
+                */
+                if(sprite_map[i].centerx + sprite_map[i].node->sprite->offsetx == offset_x &&
+                        sprite_map[i].centery + sprite_map[i].node->sprite->offsety == offset_y) {
                     return i;
-                }
-                else
-                {
+                } else {
+
+                    /*
+                    * Same image, different offset. Keep the existing
+                    * sprite node so the new map entry can share the
+                    * encoded sprite data instead of loading another copy.
+                    */
                     toshare = sprite_map[i].node;
                 }
             }
         }
     }
 
-    if(toshare)
-    {
+    /*
+    * If the image was already loaded but the offset did not match,
+    * create a new sprite map entry that points to the existing sprite
+    * node. This avoids duplicate bitmap loads and duplicate encoded
+    * sprite allocations.
+    */
+    if(toshare && toshare->sprite){
         prepare_sprite_map(sprites_loaded + 1);
         sprite_map[sprites_loaded].node = toshare;
-        sprite_map[sprites_loaded].centerx = ofsx - toshare->sprite->offsetx;
-        sprite_map[sprites_loaded].centery = ofsy - toshare->sprite->offsety;
+        sprite_map[sprites_loaded].centerx = offset_x - toshare->sprite->offsetx;
+        sprite_map[sprites_loaded].centery = offset_y - toshare->sprite->offsety;
         ++sprites_loaded;
         return sprites_loaded - 1;
     }
 
+    /*
+    * No usable cached sprite was found, so load the source bitmap from
+    * disk or the active pack file. loadbitmap() returns NULL on any
+    * image open, allocation, or decode failure.
+    */
     bitmap = loadbitmap(filename, packfile, bmpformat);
     if(bitmap == NULL)
     {
         borShutdown(1, "Unable to load file '%s'\n", filename);
     }
 
-    clipbitmap(bitmap, &clipl, &clipr, &clipt, &clipb);
+    /*
+    * Trim empty transparent borders from the bitmap before encoding.
+    * The clip values are saved as sprite offsets so the rendered image
+    * still aligns to the original requested position.
+    */
+    clipbitmap(bitmap, &clip_left, &clip_right, &clip_top, &clip_bottom);
 
+    /*
+    * Calculate storage requirements for the encoded sprite data.
+    * fakey_encodesprite() returns the number of bytes needed by
+    * encodesprite() for this bitmap and format.
+    */
     len = strlen(filename);
     size = fakey_encodesprite(bitmap);
+    
+    /*
+    * Allocate memory for the new sprite list node, and 
+    * the sprite and filename members of the new node. 
+    * If any of these allocations fail, free any memory 
+    * we allocated for the bitmap, and shut down to avoid 
+    * a crash.
+    */
     curr = malloc(sizeof(*curr));
-    curr->sprite = malloc(size);
-    curr->filename = malloc(len + 1);
-    if(curr == NULL || curr->sprite == NULL || curr->filename == NULL)
-    {
+    if(curr == NULL) {
         freebitmap(bitmap);
         borShutdown(1, "loadsprite() Out of memory!\n");
     }
+
+    curr->sprite = malloc(size);
+    curr->filename = malloc(len + 1);
+
+    if(curr->sprite == NULL || curr->filename == NULL) {
+        free(curr->sprite);
+        free(curr->filename);
+        free(curr);
+        freebitmap(bitmap);
+        borShutdown(1, "loadsprite() Out of memory!\n");
+    }
+
+    /*
+    * Store the original filename for future cache lookups, then encode
+    * the clipped bitmap into the engine's internal sprite format.
+    */
     memcpy(curr->filename, filename, len);
     curr->filename[len] = 0;
-    encodesprite(ofsx - clipl, ofsy - clipt, bitmap, curr->sprite);
-    if(sprite_list == NULL)
-    {
+    encodesprite(offset_x - clip_left, offset_y - clip_top, bitmap, curr->sprite);
+    
+    /*
+    * Insert the new sprite node at the head of the global sprite list.
+    * The sprite map below will point at this node by reference.
+    */
+    if(sprite_list == NULL) {
         sprite_list = curr;
         sprite_list->next = NULL;
-    }
-    else
-    {
+    } else {
         head = sprite_list;
         sprite_list = curr;
         sprite_list->next = head;
     }
+
+    /*
+    * Add the new sprite to the sprite map. The map stores the adjusted
+    * center position, while the sprite itself stores the clip offset and
+    * original clipped source dimensions for rendering and collision use.
+    */
     prepare_sprite_map(sprites_loaded + 1);
     sprite_map[sprites_loaded].node = sprite_list;
-    sprite_map[sprites_loaded].centerx = ofsx - clipl;
-    sprite_map[sprites_loaded].centery = ofsy - clipt;
-    sprite_list->sprite->offsetx = clipl;
-    sprite_list->sprite->offsety = clipt;
+    sprite_map[sprites_loaded].centerx = offset_x - clip_left;
+    sprite_map[sprites_loaded].centery = offset_y - clip_top;
+    sprite_list->sprite->offsetx = clip_left;
+    sprite_list->sprite->offsety = clip_top;
     sprite_list->sprite->srcwidth = bitmap->clipped_width;
     sprite_list->sprite->srcheight = bitmap->clipped_height;
+
+    /*
+    * The encoded sprite now owns the data needed by the engine, so the
+    * temporary bitmap can be released before returning the new index.
+    */
     freebitmap(bitmap);
     ++sprites_loaded;
     return sprites_loaded - 1;

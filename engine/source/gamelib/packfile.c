@@ -415,7 +415,8 @@ int isRawData()
 /////////////////////////////////////////////////////////////////////////////
 
 int openpackfile(const char *filename, const char *packfilename)
-{
+{    
+
 #ifdef VERBOSE
     char *pointsto;
 
@@ -436,180 +437,134 @@ int openpackfile(const char *filename, const char *packfilename)
     return pOpenPackfile(filename, packfilename);
 }
 
-int openPackfile(const char *filename, const char *packfilename)
-{
+int openPackfile(const char *filename, const char *packfilename) {
+
     int h, handle;
     unsigned int magic, version, headerstart, p;
     pnamestruct pn;
+    const char *disk_filename;
+    const char *pak_filename;
+
 #ifdef LINUX
     char *fspath;
 #endif
 
     h = getFreeHandle();
-    if (h == -1)
-    {
+    if (h == -1) {
         return -1;
     }
 
 #ifdef WIN
-    // Convert slashes to backslashes
-    filename = slashback(filename);
+    // Windows loose-file lookup can use backslashes.
+    disk_filename = slashback(filename);
 #else
-    // Convert backslashes to slashes
-    filename = slashfwd(filename);
+    // Non-Windows loose-file lookup should use forward slashes.
+    disk_filename = slashfwd(filename);
 #endif
 
+    // PAK lookup should compare normalized logical asset paths,
+    // not OS-specific filesystem paths.
+    pak_filename = filename;
+
     packfilepointer[h] = 0;
-	int file_permission = 666;
+    int file_permission = 666;
+
     // Separate file present?
-    if((handle = open(filename, O_RDONLY | O_BINARY, file_permission)) != -1)
-    {
-        if((packfilesize[h] = lseek(handle, 0, SEEK_END)) == -1)
-        {
-#ifdef VERBOSE
-            printf ("err handles 1\n");
-#endif
+    if((handle = open(disk_filename, O_RDONLY | O_BINARY, file_permission)) != -1) {
+        if((packfilesize[h] = lseek(handle, 0, SEEK_END)) == -1) {
             close(handle);
             return -1;
         }
-        if(lseek(handle, 0, SEEK_SET) == -1)
-        {
-#ifdef VERBOSE
-            printf ("err handles 2\n");
-#endif
+
+        if(lseek(handle, 0, SEEK_SET) == -1){
             close(handle);
             return -1;
         }
+
         packhandle[h] = handle;
         return h;
     }
 
 #ifdef LINUX
     // Try a case-insensitive search for a separate file.
-    fspath = casesearch(".", filename);
-    if (fspath != NULL)
-    {
-        if((handle = open(fspath, O_RDONLY | O_BINARY, file_permission)) != -1)
-        {
-            if((packfilesize[h] = lseek(handle, 0, SEEK_END)) == -1)
-            {
-#ifdef VERBOSE
-                printf ("err handles 3\n");
-#endif
+    fspath = casesearch(".", disk_filename);
+    if (fspath != NULL) {
+        if((handle = open(fspath, O_RDONLY | O_BINARY, file_permission)) != -1) {
+            if((packfilesize[h] = lseek(handle, 0, SEEK_END)) == -1){
                 close(handle);
                 return -1;
             }
-            if(lseek(handle, 0, SEEK_SET) == -1)
-            {
-#ifdef VERBOSE
-                printf ("err handles 4\n");
-#endif
+
+            if(lseek(handle, 0, SEEK_SET) == -1) {
                 close(handle);
                 return -1;
             }
+
             packhandle[h] = handle;
             return h;
         }
     }
 #endif
 
-#ifndef WIN
-    // Convert slashes to backslashes
-    filename = slashback(filename);
-#endif
-
     // Try to open packfile
-    if((handle = open(packfilename, O_RDONLY | O_BINARY, file_permission)) == -1)
-    {
-#ifdef VERBOSE
-        printf ("perm err\n");
-#endif
+    if((handle = open(packfilename, O_RDONLY | O_BINARY, file_permission)) == -1) {
         return -1;
     }
 
-
-    // Read magic dword ("PACK" identifier)
-    // if(read(handle, &magic, 4) != 4 || magic != SwapLSB32(PACKMAGIC))
-    if(read(handle, &magic, 4) != 4)
-    {
-#ifdef VERBOSE
-        printf ("err magic\n");
-#endif
-        close(handle);
-        return -1;
-    }
-    // Read version from packfile
-    if(read(handle, &version, 4) != 4 || version != SwapLSB32(PACKVERSION))
-    {
-#ifdef VERBOSE
-        printf ("err version\n");
-#endif
-
+    if(read(handle, &magic, 4) != 4) {
         close(handle);
         return -1;
     }
 
-    // Seek to position of headerstart indicator
-    if(lseek(handle, -4, SEEK_END) == -1)
-    {
-#ifdef VERBOSE
-        printf ("seek failed\n");
-#endif
+    if(read(handle, &version, 4) != 4 || version != SwapLSB32(PACKVERSION)) {
         close(handle);
         return -1;
     }
-    // Read headerstart
-    if(read(handle, &headerstart, 4) != 4)
-    {
-#ifdef VERBOSE
-        printf ("err header\n");
-#endif
+
+    if(lseek(handle, -4, SEEK_END) == -1) {
+        close(handle);
+        return -1;
+    }
+
+    if(read(handle, &headerstart, 4) != 4) {
         close(handle);
         return -1;
     }
 
     headerstart = SwapLSB32(headerstart);
 
-    // Seek to headerstart
-    if(lseek(handle, headerstart, SEEK_SET) == -1)
-    {
-#ifdef VERBOSE
-        printf ("err headerstart 1\n");
-#endif
+    if(lseek(handle, headerstart, SEEK_SET) == -1) {
         close(handle);
         return -1;
     }
 
     p = headerstart;
 
-    // Search for filename
-    while(read(handle, &pn, sizeof(pn)) > 12)
-    {
+    while(read(handle, &pn, sizeof(pn)) > 12) {
         pn.filesize = SwapLSB32(pn.filesize);
         pn.filestart = SwapLSB32(pn.filestart);
         pn.pns_len = SwapLSB32(pn.pns_len);
 
-        if(stricmp(filename, pn.namebuf) == 0)
-        {
+        if(myfilenamecmp(pak_filename, strlen(pak_filename), pn.namebuf, strlen(pn.namebuf)) == 0) {
             packhandle[h] = handle;
             packfilesize[h] = pn.filesize;
-            lseek(handle, pn.filestart, SEEK_SET);
+
+            if(lseek(handle, pn.filestart, SEEK_SET) == -1) {
+                close(handle);
+                return -1;
+            }
+
             return h;
         }
+
         p += pn.pns_len;
-        if(lseek(handle, p, SEEK_SET) == -1)
-        {
-#ifdef VERBOSE
-            printf ("err seek handles\n");
-#endif
+
+        if(lseek(handle, p, SEEK_SET) == -1) {
             close(handle);
             return -1;
         }
     }
-    // Filename not found
-#ifdef VERBOSE
-    printf ("err filename not found\n");
-#endif
+
     close(handle);
     return -1;
 }
