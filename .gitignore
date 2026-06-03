@@ -22,3 +22,4 @@ tools/devkitpro/*
 engine/ios/Build
 **/.DS_Store
 tools/borpak/source/borpak
+build/
