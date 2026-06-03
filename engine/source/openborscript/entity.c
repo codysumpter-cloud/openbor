@@ -679,10 +679,10 @@ static const entity_property_info entity_properties[] = {
 	.offset = PROPERTY_MEMBER_OFFSET(entity, projectile_prime),
 	.type = VT_INTEGER },
 
-	{.property = ENTITY_PROPERTY_RECURSIVE_DAMAGE,
-	.id_string = "ENTITY_PROPERTY_RECURSIVE_DAMAGE",
-	.config_flags = PROPERTY_ACCESS_CONFIG_MACRO_DEFAULT,
-	.offset = PROPERTY_MEMBER_OFFSET(entity, recursive_damage),
+	{.property = ENTITY_PROPERTY_RECURSIVE_EFFECT,
+	.id_string = "ENTITY_PROPERTY_RECURSIVE_EFFECT",
+	.config_flags = PROPERTY_ACCESS_CONFIG_READ | PROPERTY_ACCESS_CONFIG_STATIC_POINTER,
+	.offset = PROPERTY_MEMBER_OFFSET(entity, recursive_effect_list),
 	.type = VT_PTR },
 
 	{.property = ENTITY_PROPERTY_RELEASE_TIME,
@@ -913,7 +913,7 @@ const s_property_access_map entity_get_property_map(const void* acting_object_pa
 * 2023-03-03
 *
 * Return a property. Requires
-* a object pointer and property
+* an object pointer and property
 * constant to access.
 */
 HRESULT openbor_get_entity_property(const ScriptVariant* const* varlist, ScriptVariant** const pretvar, const int paramCount)
@@ -961,7 +961,7 @@ HRESULT openbor_get_entity_property(const ScriptVariant* const* varlist, ScriptV
 	/*
 	* If property id is in range, we send
 	* the property map and return parameter
-	* for population, then ext.
+	* for population, then exit.
 	*/
 
 	if (property_id_param >= 0 && property_id_param < ENTITY_PROPERTY_END) {
@@ -992,7 +992,7 @@ HRESULT openbor_get_entity_property(const ScriptVariant* const* varlist, ScriptV
 *
 * Mutate a property. Requires
 * the object pointer, a property
-* id, and new value.
+* id, and a new value.
 */
 HRESULT openbor_set_entity_property(ScriptVariant** varlist, ScriptVariant** const pretvar, const int paramCount)
 {
@@ -1129,7 +1129,7 @@ error_local:
 *
 * Mutate an entity property. Requires
 * the entity handle, a string property
-* name, and new value.
+* name, and a new value.
 */
 HRESULT openbor_set_attack_id_value(ScriptVariant** varlist, ScriptVariant** pretvar, int paramCount)
 {

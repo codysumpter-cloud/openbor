@@ -63,35 +63,36 @@
 			"\n" \
 			"Special thanks to SEGA and SNK.\n\n"
 
-#define		COMPATIBLEVERSION	0x00033749
-#define		CV_SAVED_GAME		0x00033747
-#define		CV_HIGH_SCORE		0x00033747
-#define     GAME_SPEED          200
-#define		THINK_SPEED			2
-#define		COUNTER_SPEED		(GAME_SPEED*2)
-#define		MAX_NAME_LEN		50 //47
-#define		MAX_ENTS			150
-#define		MAX_SPECIALS		8					// Added for customizable freespecials
-#define     MAX_SPECIAL_INPUTS  27                  // max freespecial input steps, MAX_SPECIAL_INPUTS-1 is reserved, MAX_SPECIAL_INPUTS-2 is animation index, MAX_SPECIAL_INPUTS-3 is reserved. OX -4 , -5 , -6 , -7 , -8 , -9 , -10 also for cancels
-#define		MAX_ATCHAIN			12					// max attack chain length
-#define     MAX_IDLES           1                   // Idle animations.
-#define     MAX_WALKS           1                   // Walk animations.
-#define     MAX_BACKWALKS       1                   // Backwalk animations.
-#define     MAX_UPS             1                   // Walk up animations.
-#define     MAX_DOWNS           1                   // Walk down animations.
-#define		MAX_ATTACKS			4					// Total number of attacks players have
-#define     MAX_FOLLOWS         4					// For followup animations
-#define     MAX_COLLISIONS      2                   // Collision boxes.
-#define		MAX_ARG_LEN			512
-#define		MAX_ALLOWSELECT_LEN	1024
-#define		MAX_SELECT_LOADS   	512
-#define		MAX_PAL_SIZE		1024
-#define		MAX_CACHED_BACKGROUNDS 9
-#define     MAX_ARG_COUNT       64
-#define     MAX_ATTACK_IDS      4                   // Number of attack ID's kept to avoid single collision hitting on each update.
-#define     PLATFORM_DEFAULT_X  99999
+#define		COMPATIBLEVERSION	    0x00033749
+#define		CV_SAVED_GAME		    0x00033747
+#define		CV_HIGH_SCORE		    0x00033747
+#define     GAME_SPEED              200
+#define		THINK_SPEED			    2
+#define		COUNTER_SPEED		    (GAME_SPEED*2)
+#define		MAX_NAME_LEN		    50 //47
+#define		MAX_ENTS			    150
+#define		MAX_SPECIALS		    8					// Added for customizable freespecials
+#define     MAX_SPECIAL_INPUTS      27                  // max freespecial input steps, MAX_SPECIAL_INPUTS-1 is reserved, MAX_SPECIAL_INPUTS-2 is animation index, MAX_SPECIAL_INPUTS-3 is reserved. OX -4 , -5 , -6 , -7 , -8 , -9 , -10 also for cancels
+#define		MAX_ATCHAIN			    12					// max attack chain length
+#define     MAX_IDLES               1                   // Idle animations.
+#define     MAX_WALKS               1                   // Walk animations.
+#define     MAX_BACKWALKS           1                   // Backwalk animations.
+#define     MAX_UPS                 1                   // Walk up animations.
+#define     MAX_DOWNS               1                   // Walk down animations.
+#define		MAX_ATTACKS			    4					// Total number of attacks players have
+#define     MAX_FOLLOWS             4					// For followup animations
+#define     MAX_COLLISIONS          2                   // Collision boxes.
+#define     MAX_RECURSIVE_DAMAGE    64					// Max number of times an attack can hit the same entity recursively (Ie. multi-hit attacks).
+#define		MAX_ARG_LEN			    512
+#define		MAX_ALLOWSELECT_LEN	    1024
+#define		MAX_SELECT_LOADS   	    512
+#define		MAX_PAL_SIZE		    1024
+#define		MAX_CACHED_BACKGROUNDS  9
+#define     MAX_ARG_COUNT           64
+#define     MAX_ATTACK_IDS          4                   // Number of attack ID's kept to avoid single collision hitting on each update.
+#define     PLATFORM_DEFAULT_X      99999
 
-#define     LIFESPAN_DEFAULT	0x7fffffff
+#define     LIFESPAN_DEFAULT	    0x7fffffff
 /*
 Note: the min Z coordinate of the player is important
 for several other drawing operations.
@@ -1456,7 +1457,7 @@ typedef enum
 typedef enum
 {
 	DAMAGE_RECURSIVE_MODE_NONE			= 0,
-	DAMAGE_RECURSIVE_MODE_HP			= (1 << 0),
+    DAMAGE_RECURSIVE_MODE_HP			= (1 << 0),
 	DAMAGE_RECURSIVE_MODE_MP			= (1 << 1),
 	DAMAGE_RECURSIVE_MODE_NON_LETHAL	= (1 << 2)
 } e_damage_recursive_logic;
@@ -2016,22 +2017,21 @@ typedef struct
 // Recursive damage structure
 // for attack boxes and damage 
 // recipient.
-typedef struct s_damage_recursive
-{
+typedef struct s_recursive_effect {
+
     int							force;  // Damage force per tick.
-    int							index;  // Index.
+    unsigned int				index;  // Index.
 	e_damage_recursive_logic	mode;   // Mode.
     unsigned int				rate;   // Tick delay.
     unsigned long   			tick;   // Time of next tick.
     unsigned long				time;   // Time to expire.
 	e_attack_types				type;	// Attack type.
 	struct entity				*owner;	// Entity that caused the recursive damage.
-	struct s_damage_recursive	*next;	// Next node of linked list.
 
     // Meta data.
-    s_meta_data*                meta_data;              // User defiend data.
-    int					        meta_tag;	            // User defined int.
-} s_damage_recursive;
+    //s_meta_data*              meta_data;              // User defiend data.
+    long long			        meta_tag;	            // User defined int.
+} s_recursive_effect;
 
 typedef struct
 {
@@ -2282,7 +2282,7 @@ typedef struct
     s_axis_principal_float            dropv;              // Velocity of target if knocked down.
     s_damage_on_landing damage_on_landing;  // Cause damage when target entity lands from fall.
     s_staydown          staydown;           // Modify victum's stayodwn properties.
-    s_damage_recursive  *recursive;         // Set up recursive damage (dot) on hit.
+    s_recursive_effect  *recursive;         // Set up recursive damage (dot) on hit.
 
     // Meta data.
     s_meta_data*        meta_data;              // User defiend data.
@@ -3576,7 +3576,7 @@ typedef struct
 
 typedef struct entity
 {    
-	// Sub structures.
+	// Resident structures.
 	s_damage_on_landing		damage_on_landing;					// ~~
 	s_bind					binding;							// Binding self to another entity. ~~
 	s_axis_principal_float	position;							// x,y,z location. ~~
@@ -3585,7 +3585,8 @@ typedef struct entity
     s_faction               faction;                            // Can hit, hostile to, etc.
     s_model					modeldata;							// model data copied here ~~
 	s_jump					jump;								// Jumping velocity and animationnid. ~~	
-	s_rush					rush;								// Rush combo display. ~~
+	s_recursive_effect      recursive_effect_list[MAX_RECURSIVE_DAMAGE]; // Array of recursive damage effects on entity. ~~
+    s_rush					rush;								// Rush combo display. ~~
 
 	// Structured pointers.
 	s_anim					*animation;							// Pointer to animation collection. ~~
@@ -3595,8 +3596,7 @@ typedef struct entity
 	s_defense				*defense;							// Resistance or vulnerability to certain attack types. ~~
     s_offense               *offense;					        // Augment or reduce damage output for some attack types.
     s_model					*model;								// current model ~~
-	s_damage_recursive		*recursive_damage;					// Recursive damage linked list head. ~~
-    s_axis_plane_lateral_float *waypoints;						// Pathfinding waypoint array. ~~
+	s_axis_plane_lateral_float *waypoints;						// Pathfinding waypoint array. ~~
 	s_scripts				*scripts;							// Loaded scripts. ~~
 
 	struct entity			*collided_entity;					// Opposing entity when entities occupy same space. ~~
@@ -3627,6 +3627,9 @@ typedef struct entity
 	float					movez;								// Reposition this many pixels per frame. Used by animation movez command. ~~
 	float					speedmul;							// Final multiplier for movement/velocity. ~~
 
+    // Big int values.
+    uint64_t                recursive_damage_active;            // Bitmap of currently active recursive damage indices.
+	
     // Size defined ints (for time).
     unsigned long	        combotime;							// If not expired, continue to next attack in series combo. ~~
 	unsigned long			guardtime;							// Next time to auto adjust guardpoints. ~~
@@ -3668,7 +3671,7 @@ typedef struct entity
 	unsigned int			per1;								// Used to store at what health value the entity begins to flash ~~
 	unsigned int			per2;								// Used to store at what health value the entity flashes more rapidly ~~
 	unsigned int			numwaypoints;						// Count of waypoints in use. ~~
-	unsigned int			walkmode;							// Force a specfic alternate walk. ~~
+    unsigned int			walkmode;							// Force a specfic alternate walk. ~~
 
 	// Signed integers
     int                     guardpoints;                        // Remaining value before guardbreak.
@@ -3725,7 +3728,7 @@ typedef struct entity
     unsigned int		    tocost;								// Cost life on hit with special. ~~
     unsigned int		    turning;							// Turning around. ~~
     unsigned int		    walking;							// ~~
-	
+
 	// Signed char.
 	char					name[MAX_NAME_LEN];					// Display name (alias). ~~	
        
@@ -4074,13 +4077,10 @@ void offense_setup_from_arg(char* filename, char* command, s_offense* target_off
 int offense_result_damage(s_offense* offense_object, int attack_force);
 
 /* Recursive damage. */
-s_damage_recursive*         recursive_damage_allocate_object();
+s_recursive_effect*         recursive_damage_allocate_object();
 void                        recursive_damage_check_apply(entity* ent, entity* other, s_attack* attack);
-void                        recursive_damage_dump_object(s_damage_recursive* recursive);
-void	                    recursive_damage_free_list(s_damage_recursive* head);
-void                        recursive_damage_free_node(s_damage_recursive** list, s_damage_recursive* node);
-void                        recursive_damage_free_object(s_damage_recursive* target);
-e_damage_recursive_logic    recursive_damage_get_mode_flag_from_argument(char* value);
+void                        recursive_damage_dump_object(s_recursive_effect* recursive);
+void                        recursive_damage_free_object(s_recursive_effect* target);
 e_damage_recursive_logic    recursive_damage_get_mode_setup_from_arg_list(ArgList* arglist);
 e_damage_recursive_logic    recursive_damage_get_mode_setup_from_legacy_argument(e_damage_recursive_cmd_read value);
 
@@ -4225,7 +4225,7 @@ typedef struct
     unsigned                    idle;           // TRUE = Set idle status during frame.
     s_collision_entity*         ebox;           // "Entity" box added by WD. To be removed.
     s_hitbox*                   entity_coords;  // Coordinates for "Entity" box. To be removed.
-    s_damage_recursive*         recursive;      // Recursive damage properties for attack.
+    s_recursive_effect*         recursive;      // Recursive damage properties for attack.
     s_move*                     move;           // Move <n> horizontal pixels on frame.
     float*                      platform;       // Platform coordinates.
     int                         frameshadow;    // TRUE = Display shadow during frame.
@@ -4309,7 +4309,7 @@ void                collision_attack_remove_undefined_coordinates(s_collision_at
 s_hitbox*           collision_attack_upsert_coordinates_property(s_collision_attack** head, int index);
 s_collision_attack* collision_attack_upsert_index(s_collision_attack* head, int index);
 s_attack*           collision_attack_upsert_property(s_collision_attack** head, int index);
-s_damage_recursive* collision_attack_upsert_recursive_property(s_collision_attack** head, int index);
+s_recursive_effect* collision_attack_upsert_recursive_property(s_collision_attack** head, int index);
 
 /* -- Body properties */
 s_body* body_allocate_object();
@@ -4331,11 +4331,6 @@ void                collision_body_remove_undefined_coordinates(s_collision_body
 s_hitbox*           collision_body_upsert_coordinates_property(s_collision_body** head, int index);
 s_collision_body*   collision_body_upsert_index(s_collision_body* head, int index);
 s_body*             collision_body_upsert_property(s_collision_body** head, int index);
-
-
-// -- Recursive damage
-s_damage_recursive*     recursive_damage_allocate_object();
-void                    recursive_damage_dump_object(s_damage_recursive* recursive);
 
 /* -- Collision container and list. */
 s_hitbox*               collision_allocate_coords(s_hitbox* coords);
@@ -4449,7 +4444,7 @@ void player_blink(void);
 void common_prejump();
 void common_preduck();
 void common_idle();
-void recursive_damage_update(entity *target);
+void recursive_entity_effect_update(entity *target);
 void tryjump(float, float, float, e_animations);
 void dojump(float, float, float, e_animations);
 void tryduck(entity*);
