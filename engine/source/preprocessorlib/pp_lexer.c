@@ -550,6 +550,43 @@ HRESULT pp_lexer_GetTokenIdentifier(pp_lexer *plexer, pp_token *theNextToken)
     return S_OK;
 }
 
+/*
+* Caskey, Damon V.
+* 2026-06-04
+*
+* Consumes the valid suffix portion of an 
+* integer constant: u, l, ul, lu, ll, ull, 
+* llu (case-insensitive). Full suffix validation 
+* is handled during constant conversion.
+*/
+static void pp_lexer_ConsumeIntegerSuffix(pp_lexer *plexer)
+{
+    int found_u = 0;
+    int l_count = 0;
+
+    /*
+     * Valid integer suffix shapes:
+     * u, l, ul, lu, ll, ull, llu
+     * Case-insensitive.
+     */
+
+    if ((*plexer->pcurChar == 'u') || (*plexer->pcurChar == 'U')) {
+        found_u = 1;
+        CONSUMECHARACTER;
+    }
+
+    while (l_count < 2 &&
+           ((*plexer->pcurChar == 'l') || (*plexer->pcurChar == 'L'))) {
+        l_count++;
+        CONSUMECHARACTER;
+    }
+
+    if (!found_u &&
+        ((*plexer->pcurChar == 'u') || (*plexer->pcurChar == 'U'))) {
+        CONSUMECHARACTER;
+    }
+}
+
 /******************************************************************************
 *  Number -- This method extracts a numerical constant from the stream.  It
 *  only extracts the digits that make up the number.  No conversion from string
@@ -563,45 +600,39 @@ HRESULT pp_lexer_GetTokenNumber(pp_lexer *plexer, pp_token *theNextToken)
     //copy the source that makes up this token
     //a constant is one of these:
 
-    //0[xX][a-fA-F0-9]+{u|U|l|L}
-    //0{D}+{u|U|l|L}
-    if (( !strncmp( plexer->pcurChar, "0X", 2)) || ( !strncmp( plexer->pcurChar, "0x", 2)))
-    {
+    // integer-suffix: [uU]?[lL]{0,2} | [lL]{1,2}[uU]?
+
+    if (( !strncmp( plexer->pcurChar, "0X", 2)) || ( !strncmp( plexer->pcurChar, "0x", 2))) {
+        
         CONSUMECHARACTER;
         CONSUMECHARACTER;
+
         while ((*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9') ||
                 (*plexer->pcurChar >= 'a' && *plexer->pcurChar <= 'f') ||
-                (*plexer->pcurChar >= 'A' && *plexer->pcurChar <= 'F'))
-        {
+                (*plexer->pcurChar >= 'A' && *plexer->pcurChar <= 'F')) {
             CONSUMECHARACTER;
         }
 
-        if (( !strncmp( plexer->pcurChar, "u", 1)) || ( !strncmp( plexer->pcurChar, "U", 1)) ||
-                ( !strncmp( plexer->pcurChar, "l", 1)) || ( !strncmp( plexer->pcurChar, "L", 1)))
-        {
-            CONSUMECHARACTER;
-        }
+        pp_lexer_ConsumeIntegerSuffix(plexer);
 
         MAKETOKEN( PP_TOKEN_HEXCONSTANT );
-    }
-    else
-    {
-        while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9')
-        {
+    
+    } else {
+
+        while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9') {
             CONSUMECHARACTER;
         }
 
-        if (( !strncmp( plexer->pcurChar, "E", 1)) || ( !strncmp( plexer->pcurChar, "e", 1)))
-        {
+        if (( !strncmp( plexer->pcurChar, "E", 1)) || ( !strncmp( plexer->pcurChar, "e", 1))) {
+            
             CONSUMECHARACTER;
-            while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9')
-            {
+            
+            while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9') {
                 CONSUMECHARACTER;
             }
 
             if (( !strncmp( plexer->pcurChar, "f", 1)) || ( !strncmp( plexer->pcurChar, "F", 1)) ||
-                    ( !strncmp( plexer->pcurChar, "l", 1)) || ( !strncmp( plexer->pcurChar, "L", 1)))
-            {
+                    ( !strncmp( plexer->pcurChar, "l", 1)) || ( !strncmp( plexer->pcurChar, "L", 1))) {
                 CONSUMECHARACTER;
             }
 
@@ -610,38 +641,29 @@ HRESULT pp_lexer_GetTokenNumber(pp_lexer *plexer, pp_token *theNextToken)
         else if ( !strncmp( plexer->pcurChar, ".", 1))
         {
             CONSUMECHARACTER;
-            while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9')
-            {
+
+            while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9') {
                 CONSUMECHARACTER;
             }
 
-            if (( !strncmp( plexer->pcurChar, "E", 1)) || ( !strncmp( plexer->pcurChar, "e", 1)))
-            {
+            if (( !strncmp( plexer->pcurChar, "E", 1)) || ( !strncmp( plexer->pcurChar, "e", 1))) {
                 CONSUMECHARACTER;
 
-                while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9')
-                {
+                while (*plexer->pcurChar >= '0' && *plexer->pcurChar <= '9') {
                     CONSUMECHARACTER;
                 }
 
                 if (( !strncmp( plexer->pcurChar, "f", 1)) ||
                         ( !strncmp( plexer->pcurChar, "F", 1)) ||
                         ( !strncmp( plexer->pcurChar, "l", 1)) ||
-                        ( !strncmp( plexer->pcurChar, "L", 1)))
-                {
-                    CONSUMECHARACTER;
+                        ( !strncmp( plexer->pcurChar, "L", 1))) {
+                        CONSUMECHARACTER;
                 }
             }
             MAKETOKEN( PP_TOKEN_FLOATCONSTANT );
 
-        }
-        else
-        {
-            if (( !strncmp( plexer->pcurChar, "u", 1)) || ( !strncmp( plexer->pcurChar, "U", 1)) ||
-                    ( !strncmp( plexer->pcurChar, "l", 1)) || ( !strncmp( plexer->pcurChar, "L", 1)))
-            {
-                CONSUMECHARACTER;
-            }
+        } else {
+            pp_lexer_ConsumeIntegerSuffix(plexer);
             MAKETOKEN( PP_TOKEN_INTCONSTANT );
         }
     }

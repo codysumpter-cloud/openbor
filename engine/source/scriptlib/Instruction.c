@@ -9,6 +9,8 @@
 #include "Instruction.h"
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <stdint.h>
 
 void Instruction_InitViaToken(Instruction *pins, OpCode code, Token *pToken )
 {
@@ -68,50 +70,6 @@ void Instruction_Clear(Instruction *pins)
     memset(pins, 0, sizeof(Instruction));
 }
 
-
-int htoi(const char *src)
-{
-    int len;
-    int temp, ret;
-    const char *ptr;
-
-    len = strlen(src);
-    if(len < 3 || src[0] != '0' || (src[1] != 'x' && src[1] != 'X'))
-    {
-        return 0;
-    }
-
-    ptr = src + len - 1;
-    if(*ptr == 'U' || *ptr == 'u' ||
-            *ptr == 'l' || *ptr == 'L')
-    {
-        ptr--;
-    }
-
-    for(temp = 1, ret = 0; ptr != src + 1; ptr--)
-    {
-        if(*ptr <= '9' && *ptr >= '0')
-        {
-            ret += (*ptr - '9' + 9) * temp;
-        }
-        else if(*ptr <= 'f' && *ptr >= 'a')
-        {
-            ret += (*ptr - 'f' + 0xf) * temp;
-        }
-        else if(*ptr <= 'F' && *ptr >= 'A')
-        {
-            ret += (*ptr - 'F' + 0xf) * temp;
-        }
-        else
-        {
-            return 0;
-        }
-        temp *= 16;
-    }
-    return ret;
-
-}
-
 void Instruction_NewData(Instruction *pins)
 {
     if(pins->theVal)
@@ -122,15 +80,359 @@ void Instruction_NewData(Instruction *pins)
     ScriptVariant_Init( pins->theVal);
 }
 
-//'compile' constant to improve speed
-void Instruction_ConvertConstant(Instruction *pins)
+static int Instruction_IsIntegerSuffixChar(char c)
 {
+    return c == 'u' || c == 'U' ||
+           c == 'l' || c == 'L';
+}
+
+static int Instruction_IsUSuffix(char c)
+{
+    return c == 'u' || c == 'U';
+}
+
+static int Instruction_IsLSuffix(char c)
+{
+    return c == 'l' || c == 'L';
+}
+
+/*
+* Validate suffixes already captured by the lexer.
+*
+* Accepted:
+*   u, l, ul, lu, ll, ull, llu
+*
+* Case-insensitive.
+*/
+static int Instruction_ParseIntegerSuffix(const char *suffix, int *unsigned_suffix, int *long_count) {
+    const char *cursor = suffix;
+
+    *unsigned_suffix = 0;
+    *long_count = 0;
+
+    if (Instruction_IsUSuffix(*cursor)) {
+        *unsigned_suffix = 1;
+        cursor++;
+    }
+
+    while (*long_count < 2 && Instruction_IsLSuffix(*cursor)) {
+        (*long_count)++;
+        cursor++;
+    }
+
+    if (!*unsigned_suffix && Instruction_IsUSuffix(*cursor)) {
+        *unsigned_suffix = 1;
+        cursor++;
+    }
+
+    return *cursor == '\0';
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-04 - Original author and date unknown (Plombo?).
+*
+* Reworked 2026-06-04 to safely handle 
+* 64-bit integers and to validate suffixes.
+*/
+static HRESULT Instruction_ParseIntegerConstant(ScriptVariant *pvar, const char *source, int hex_constant) {
+    
+    char *work = NULL;
+    char *suffix = NULL;
+    char *endptr = NULL;
+    const char *cursor = source;
+    size_t len;
+    size_t suffix_index;
+    uint64_t magnitude;
+    int unsigned_suffix = 0;
+    int long_count = 0;
+    int negate = 0;
+    int logical_not = 0;
+    int base = hex_constant ? 16 : 10;
+
+    if (!pvar || !source) {
+        return E_FAIL;
+    }
+
+    if (*cursor == '!' || *cursor == '-') {
+        logical_not = (*cursor == '!');
+        negate = (*cursor == '-');
+        cursor++;
+    }
+
+    len = strlen(cursor);
+    if (!len) {
+        return E_FAIL;
+    }
+
+    work = (char *)malloc(len + 1);
+    if (!work) {
+        return E_FAIL;
+    }
+
+    memcpy(work, cursor, len + 1);
+
+    /*
+    * Split numeric body from suffix. The lexer 
+    * should only give us a valid prefix, but 
+    * this still lets conversion validate what 
+    * it received.
+    */
+    suffix_index = len;
+
+    while (suffix_index > 0 && Instruction_IsIntegerSuffixChar(work[suffix_index - 1])) {
+        suffix_index--;
+    }
+
+    suffix = work + suffix_index;
+
+    if (!Instruction_ParseIntegerSuffix(suffix, &unsigned_suffix, &long_count)) {
+        free(work);
+        return E_FAIL;
+    }
+
+    work[suffix_index] = '\0';
+
+    errno = 0;
+    magnitude = strtoull(work, &endptr, base);
+
+    if (errno == ERANGE || endptr == work || *endptr != '\0') {
+        free(work);
+        return E_FAIL;
+    }
+
+    free(work);
+
+    /*
+    * Logical not always produces legacy integer 0/1.
+    */
+    if (logical_not) {
+        ScriptVariant_ChangeType(pvar, VT_INTEGER);
+        pvar->lVal = (LONG)(!magnitude);
+        return S_OK;
+    }
+
+    /*
+    * Negative constants are signed. Allow -2147483648 and
+    * -9223372036854775808 by permitting one extra magnitude value.
+    */
+    if (negate) {
+        if (magnitude <= ((uint64_t)MAX_INT + 1ULL)) {
+
+            ScriptVariant_ChangeType(pvar, VT_INTEGER);
+
+            if (magnitude == ((uint64_t)MAX_INT + 1ULL)){
+                pvar->lVal = (LONG)MIN_INT;
+            
+            } else {
+                pvar->lVal = -(LONG)magnitude;
+            }
+
+            return S_OK;
+        }
+
+        if (magnitude <= ((uint64_t)INT64_MAX + 1ULL)) {
+
+            ScriptVariant_ChangeType(pvar, VT_INTEGER64);
+
+            if (magnitude == ((uint64_t)INT64_MAX + 1ULL)) {
+                pvar->llVal = INT64_MIN;
+            
+            } else {           
+                pvar->llVal = -(int64_t)magnitude;
+            }
+
+            return S_OK;
+        }
+
+        return E_FAIL;
+    }
+
+    /*
+    * Positive unsigned path.
+    *
+    * Keep small U-suffixed values as 
+    * VT_INTEGER for legacy friendliness.
+    * Promote if the suffix asks for long 
+    * long or if the value needs it.
+    */
+
+    if (unsigned_suffix) {
+        
+        if (long_count < 2 && magnitude <= (uint64_t)MAX_INT) {
+
+            ScriptVariant_ChangeType(pvar, VT_INTEGER);
+            pvar->lVal = (LONG)magnitude;
+            return S_OK;
+        }
+
+        ScriptVariant_ChangeType(pvar, VT_UINTEGER64);
+        pvar->ullVal = magnitude;
+        return S_OK;
+    }
+
+    /*
+    * Positive signed path.
+    */
+
+    if (long_count < 2 && magnitude <= (uint64_t)MAX_INT) {
+        ScriptVariant_ChangeType(pvar, VT_INTEGER);
+        pvar->lVal = (LONG)magnitude;
+        return S_OK;
+    }
+
+    if (magnitude <= (uint64_t)INT64_MAX) {
+        ScriptVariant_ChangeType(pvar, VT_INTEGER64);
+        pvar->llVal = (int64_t)magnitude;
+        return S_OK;
+    }
+
+    /*
+    * Unsuffixed huge hex constants are commonly 
+    * bitmasks. Let them land in unsigned 64. For 
+    * decimal, require U/UL/ULL to avoid accidental 
+    * unsigned.
+    */
+    if (hex_constant) {
+        ScriptVariant_ChangeType(pvar, VT_UINTEGER64);
+        pvar->ullVal = magnitude;
+        return S_OK;
+    }
+
+    return E_FAIL;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-04 - Original author and date unknown (Plombo?).
+*
+* Convert a hexadecimal integer constant 
+* to legacy int width. Accepts optional 
+* integer suffixes and tolerates leading 
+* '-' or '!', but does not apply unary 
+* semantics. Values outside 32 bits return 
+* 0.
+*/
+int htoi(const char *src) {
+
+    const char *cursor;
+    char *work = NULL;
+    char *suffix = NULL;
+    char *endptr = NULL;
+    size_t len;
+    size_t suffix_index;
+    uint64_t value;
+    int unsigned_suffix = 0;
+    int long_count = 0;
+
+    if (!src) {
+        return 0;
+    }
+
+    cursor = src;
+
+    /*
+    * Legacy htoi() expects a hex source. Let it tolerate the same leading
+    * unary characters handled by Instruction_ParseIntegerConstant().
+    */
+    if (*cursor == '-' || *cursor == '!') {
+        cursor++;
+    }
+
+    if (cursor[0] != '0' || (cursor[1] != 'x' && cursor[1] != 'X')) {
+        return 0;
+    }
+
+    cursor += 2;
+
+    len = strlen(cursor);
+
+    if (!len) {
+        return 0;
+    }
+
+    work = (char *)malloc(len + 1);
+
+    if (!work) {
+        return 0;
+    }
+
+    memcpy(work, cursor, len + 1);
+
+    suffix_index = len;
+
+    while (suffix_index > 0 && Instruction_IsIntegerSuffixChar(work[suffix_index - 1])) {
+        suffix_index--;
+    }
+
+    suffix = work + suffix_index;
+
+    if (!Instruction_ParseIntegerSuffix(suffix, &unsigned_suffix, &long_count)) {
+        free(work);
+        return 0;
+    }
+
+    work[suffix_index] = '\0';
+
+    if (!work[0]) {
+        free(work);
+        return 0;
+    }
+
+    errno = 0;
+    value = strtoull(work, &endptr, 16);
+
+    if (errno == ERANGE || endptr == work || *endptr != '\0') {
+        free(work);
+        return 0;
+    }
+
+    free(work);
+
+    /*
+    * htoi() is legacy int-width. Reject values that 
+    * do not fit 32 bits. Values from 0x80000000 through 
+    * 0xFFFFFFFF preserve the old bitmask-style
+    * behavior on normal two's-complement targets.
+    */
+
+    if (value > UINT32_MAX) {
+        return 0;
+    }
+
+    return (int)(uint32_t)value;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-04
+*
+* Check if the source string for an integer 
+* constant looks like hex.
+*/
+static int Instruction_IsHexIntegerSource(const char *source) {
+    
+    if (!source) {
+        return 0;
+    }
+
+    if (*source == '-' || *source == '!') {
+        source++;
+    }
+
+    return source[0] == '0' && (source[1] == 'x' || source[1] == 'X');
+}
+
+//'compile' constant to improve speed
+void Instruction_ConvertConstant(Instruction *pins) {
+    
     ScriptVariant *pvar;
     CHAR *sc;
     if(pins->theVal)
     {
         return;    //already have the constant as a variant
     }
+
     if( pins->OpCode == CONSTDBL)
     {
         pvar = (ScriptVariant *)malloc(sizeof(ScriptVariant));
@@ -153,62 +455,57 @@ void Instruction_ConvertConstant(Instruction *pins)
             pvar->dblVal = -pvar->dblVal;
         }
 
-    }
-    else if( pins->OpCode == CONSTINT || pins->OpCode == CHECKARG)
-    {
+    } else if(pins->OpCode == CONSTINT || pins->OpCode == CHECKARG) {
+
         pvar = (ScriptVariant *)malloc(sizeof(ScriptVariant));
+
+        if (!pvar) {
+            return;
+        }
+
         ScriptVariant_Init(pvar);
-        ScriptVariant_ChangeType(pvar, VT_INTEGER);
-        sc = pins->theToken->theSource;
-        if (pins->theToken->theType != END_OF_TOKENS)
-        {
+
+        if (pins->theToken->theType != END_OF_TOKENS)  {
             sc = pins->theToken->theSource;
-            if(sc[0] == '!' || sc[0] == '-')
-            {
-                sc++;
+
+            if (Instruction_ParseIntegerConstant(
+                    pvar,
+                    sc,
+                    pins->theToken->theType == TOKEN_HEXCONSTANT) != S_OK) {
+                /*
+                * Keep old behavior non-fatal unless the compiler 
+                * has a better error reporting path available here.
+                */
+                ScriptVariant_ChangeType(pvar, VT_INTEGER);
+                pvar->lVal = 0;
             }
-            if(pins->theToken->theType == TOKEN_HEXCONSTANT)
-            {
-                pvar->lVal = (LONG)htoi(sc);
-            }
-            else
-            {
-                pvar->lVal = (LONG)atoi(sc);
-            }
-            if(pins->theToken->theSource[0] == '!')
-            {
-                pvar->lVal = (LONG)(!pvar->dblVal);
-            }
-            else if(pins->theToken->theSource[0] == '-')
-            {
-                pvar->lVal = -pvar->lVal;
-            }
-        }
-        else
-        {
-            // Argument count is the only integer constant added via a label
-            // check hex number just in case, though it is not possible
-            // unless you add it manually...
-            if(pins->Label[1] == 'x' || pins->Label[1] == 'X')
-            {
-                pvar->lVal = (LONG)htoi( pins->Label);
-            }
-            else
-            {
-                pvar->lVal = (LONG)atoi( pins->Label);
+        
+        } else {
+
+            /*
+            * This now handles decimal, hex, and optional 
+            * leading '-' or '!' uniformly.
+            */
+
+            if (Instruction_ParseIntegerConstant(
+                    pvar,
+                    pins->Label,
+                    Instruction_IsHexIntegerSource(pins->Label)) != S_OK) {
+
+                ScriptVariant_ChangeType(pvar, VT_INTEGER);
+                pvar->lVal = 0;
             }
         }
-    }
-    else if(pins->OpCode == CONSTSTR)
-    {
+    
+    } else if(pins->OpCode == CONSTSTR) {
         pvar = (ScriptVariant *)malloc(sizeof(ScriptVariant));
         ScriptVariant_Init(pvar);
         ScriptVariant_ParseStringConstant(pvar, pins->theToken->theSource);
-    }
-    else
-    {
+    
+    } else {
         return;
     }
+
     pins->theVal = pvar;
 }
 
