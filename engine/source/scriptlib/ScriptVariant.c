@@ -585,6 +585,116 @@ void ScriptVariant_Copy(ScriptVariant *svar, ScriptVariant *rightChild )
     svar->vt = rightChild->vt;
 }
 
+/*
+* Caskey, Damon V.
+* 2021-06-04
+*
+* The following functions determine the 
+* appropriate type for a math operation
+* based on the types of the operands, and
+* set the result of a math operation, safely
+* handling overflow and type promotion to 
+* 64-bit integers when necessary.
+*/
+
+static int ScriptVariant_IsDecimalMath(ScriptVariant *left, ScriptVariant *right)
+{
+    return left->vt == VT_DECIMAL || right->vt == VT_DECIMAL;
+}
+
+static int ScriptVariant_IsUnsignedMath(ScriptVariant *left, ScriptVariant *right)
+{
+    return left->vt == VT_UINTEGER64 || right->vt == VT_UINTEGER64;
+}
+
+static int ScriptVariant_Is64BitMath(ScriptVariant *left, ScriptVariant *right)
+{
+    return left->vt == VT_INTEGER64 ||
+           right->vt == VT_INTEGER64 ||
+           left->vt == VT_UINTEGER64 ||
+           right->vt == VT_UINTEGER64;
+}
+
+/*
+* Caskey, Damon V.
+* 2021-06-04
+*
+* Set the result of a math operation, safely 
+* handling overflow and type promotion to 64-bit 
+* integers when necessary.
+*/
+
+static void ScriptVariant_SetSignedIntegerResult(ScriptVariant *retvar, long long value, int force64) {
+    
+    if (!force64 && value >= (long long)LONG_MIN && value <= (long long)LONG_MAX) {
+        ScriptVariant_ChangeType(retvar, VT_INTEGER);
+        retvar->lVal = (LONG)value;
+    
+    } else {
+
+        ScriptVariant_ChangeType(retvar, VT_INTEGER64);
+        retvar->llVal = value;
+    }
+}
+
+static void ScriptVariant_SetUnsignedIntegerResult(ScriptVariant *retvar, unsigned long long value, int force64) {
+    
+    if (!force64 && value <= (unsigned long long)LONG_MAX) {
+
+        ScriptVariant_ChangeType(retvar, VT_INTEGER);
+        retvar->lVal = (LONG)value;
+    
+    } else {
+
+        ScriptVariant_ChangeType(retvar, VT_UINTEGER64);
+        retvar->ullVal = value;
+    }
+}
+
+static int ScriptVariant_AddSigned64(long long left, long long right, long long *result) {
+
+    if ((right > 0 && left > LLONG_MAX - right) ||
+        (right < 0 && left < LLONG_MIN - right)) {
+        return 0;
+    }
+
+    *result = left + right;
+    return 1;
+}
+
+static int ScriptVariant_SubSigned64(long long left, long long right, long long *result) {
+    
+    if ((right < 0 && left > LLONG_MAX + right) ||
+        (right > 0 && left < LLONG_MIN + right)) {
+        return 0;
+    }
+
+    *result = left - right;
+    return 1;
+}
+
+static int ScriptVariant_MulSigned64(long long left, long long right, long long *result) {
+    
+    if (left > 0) {
+        
+        if ((right > 0 && left > LLONG_MAX / right) ||
+            (right < 0 && right < LLONG_MIN / left)) {
+            return 0;
+        }
+    
+    } else if (left < 0) {
+
+        if ((right > 0 && left < LLONG_MIN / right) ||
+            (right < 0 && left < LLONG_MAX / right)) {
+            return 0;
+        }
+    }
+
+    *result = left * right;
+    return 1;
+}
+
+
 // light version, for compiled call, faster than above, but not safe in some situations
 ScriptVariant *ScriptVariant_Assign(ScriptVariant *svar, ScriptVariant *rightChild )
 {
@@ -924,41 +1034,123 @@ ScriptVariant *ScriptVariant_Shr( ScriptVariant *svar, ScriptVariant *rightChild
 }
 
 
-ScriptVariant *ScriptVariant_Add( ScriptVariant *svar, ScriptVariant *rightChild )
-{
+/*
+* Caskey, Damon V.
+* 2026-06-04
+*
+* Adds two script variants.
+*
+* String operands concatenate as before. Decimal operands
+* use floating-point arithmetic. Integer operands stay in
+* integer space so 64-bit carriers do not lose precision
+* through DOUBLE conversion.
+*/
+ScriptVariant *ScriptVariant_Add(ScriptVariant *svar, ScriptVariant *rightChild) {
+    
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    DOUBLE dbl1, dbl2;
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
-        if(svar->vt == VT_DECIMAL || rightChild->vt == VT_DECIMAL)
-        {
-            ScriptVariant_ChangeType(&retvar, VT_DECIMAL);
-            retvar.dblVal = dbl1 + dbl2;
-        }
-        else
-        {
-            ScriptVariant_ChangeType(&retvar, VT_INTEGER);
-            retvar.lVal = (LONG)(dbl1 + dbl2);
-        }
-    }
-    else if(svar->vt == VT_STR || rightChild->vt == VT_STR)
-    {
-        CHAR *dst;
-        int len1 = ScriptVariant_LengthAsString(svar),
-            len2 = ScriptVariant_LengthAsString(rightChild);
+
+    /*
+    * String concatenation behavior.
+    *
+    * If either operand is a string, convert both operands
+    * to strings and concatenate them into a new cache entry.
+    */
+    if (svar->vt == VT_STR || rightChild->vt == VT_STR) {
+        CHAR *destination_string;
+        int length_a = ScriptVariant_LengthAsString(svar);
+        int length_b = ScriptVariant_LengthAsString(rightChild);
 
         ScriptVariant_ChangeType(&retvar, VT_STR);
-        retvar.strVal = StrCache_Pop(len1 + len2);
-        dst = StrCache_Get(retvar.strVal);
-        ScriptVariant_ToString(svar, dst);
-        ScriptVariant_ToString(rightChild, dst + len1);
-        dst[len1 + len2] = '\0'; // shouldn't be needed, but just in case
+
+        /*
+        * String variants store a string-cache index, not
+        * inline text. Reserve a cache entry large enough for
+        * both operands and get its writable character buffer.
+        */
+        retvar.strVal = StrCache_Pop(length_a + length_b);
+        destination_string = StrCache_Get(retvar.strVal);
+
+        /*
+        * Fill the cache-owned buffer: left operand first,
+        * then right operand at the end of the left text.
+        */
+        ScriptVariant_ToString(svar, destination_string);
+        ScriptVariant_ToString(rightChild, destination_string + length_a);
+
+        /*
+        * Finalize the cache-owned buffer as a C string.
+        * The cache releases it later through reference 
+        * counting.
+        */
+        destination_string[length_a + length_b] = '\0';
+
+        return &retvar;
     }
-    else
+
+    /*
+    * If either operand is a decimal, use decimal arithmetic.
+    */
+    if (ScriptVariant_IsDecimalMath(svar, rightChild)) {
+        DOUBLE left;
+        DOUBLE right;
+
+        if (ScriptVariant_DecimalValue(svar, &left) == S_OK &&
+            ScriptVariant_DecimalValue(rightChild, &right) == S_OK) {
+            ScriptVariant_ChangeType(&retvar, VT_DECIMAL);
+            retvar.dblVal = left + right;
+        
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Unsigned 64-bit arithmetic is used when either
+    * operand is an unsigned 64-bit carrier. Legacy
+    * integer operands remain in the signed path unless
+    * a true unsigned 64-bit value participates.
+    */
+    if (ScriptVariant_IsUnsignedMath(svar, rightChild)) {
+
+        unsigned long long left;
+        unsigned long long right;
+        unsigned long long result;
+
+        if (ScriptVariant_Unsigned64Value(svar, &left) == S_OK &&
+            ScriptVariant_Unsigned64Value(rightChild, &right) == S_OK &&
+            ScriptVariant_AddUnsigned64(left, right, &result)) {
+            ScriptVariant_SetUnsignedIntegerResult(&retvar, result, 1);
+        
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Signed integer arithmetic covers legacy integers
+    * and signed 64-bit carriers. Ugh, not a fan of 
+    * orphan brackets, but shuts up modern compilers 
+    * and code evaluation tools.
+    */
     {
-        ScriptVariant_Clear(&retvar);
-    }
+        long long left;
+        long long right;
+        long long result;
+        int force64 = ScriptVariant_Is64BitMath(svar, rightChild);
+
+        if (ScriptVariant_Integer64Value(svar, &left) == S_OK &&
+            ScriptVariant_Integer64Value(rightChild, &right) == S_OK &&
+            ScriptVariant_AddSigned64(left, right, &result)) {
+            ScriptVariant_SetSignedIntegerResult(&retvar, result, force64);
+        
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+    }    
 
     return &retvar;
 }
