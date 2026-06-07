@@ -121,11 +121,11 @@ void property_access_dump_members(property_access_map get_property_map, const in
                     break;
 
                 case VT_INTEGER64:
-                    printf(" | %lld", *(long long*)property_map.field);
+                    printf(" | %lld", *(int64_t*)property_map.field);
                     break;
 
                 case VT_UINTEGER64:
-                    printf(" | %llu", *(unsigned long long*)property_map.field);
+                    printf(" | %llu", *(uint64_t*)property_map.field);
                     break;
 
                 case VT_PTR:
@@ -198,13 +198,13 @@ HRESULT property_access_get_member(const s_property_access_map* property_map, Sc
     case VT_INTEGER64:
 
         //printf("\n\t VT_INTEGER64");
-        pretvar->llVal = *(long long*)property_map->field;
+        pretvar->llVal = *(int64_t*)property_map->field;
         break;
 
     case VT_UINTEGER64:
 
         //printf("\n\t VT_UINTEGER64");
-        pretvar->ullVal = *(unsigned long long*)property_map->field;
+        pretvar->ullVal = *(uint64_t*)property_map->field;
         break;
 
     case VT_PTR:
@@ -268,8 +268,8 @@ HRESULT property_access_set_member(const void* const acting_object, const s_prop
     LONG    temp_int;
     DOUBLE  temp_float;
     char temp_buffer[MAX_NAME_LEN];
-    long long temp_int64;
-    unsigned long long temp_uint64;
+    int64_t temp_int64;
+    uint64_t temp_uint64;
     
     if (property_map == NULL || property_map->field == NULL) {
         printf("\n\n Error: Null pointer passed to a property access set function. \n");
@@ -296,7 +296,7 @@ HRESULT property_access_set_member(const void* const acting_object, const s_prop
 
             if (SUCCEEDED(ScriptVariant_Integer64Value(acting_value, &temp_int64))) {
 
-                *(long long*)property_map->field = temp_int64;
+                *(int64_t*)property_map->field = temp_int64;
             }
             break;
 
@@ -304,7 +304,7 @@ HRESULT property_access_set_member(const void* const acting_object, const s_prop
 
             if (SUCCEEDED(ScriptVariant_Unsigned64Value(acting_value, &temp_uint64))) {
 
-                *(unsigned long long*)property_map->field = temp_uint64;
+                *(uint64_t*)property_map->field = temp_uint64;
             }
             break;
 
