@@ -730,103 +730,512 @@ ScriptVariant *ScriptVariant_And( ScriptVariant *svar, ScriptVariant *rightChild
 }
 
 /*
+* Caskey, Damon V.
+* 2026-06-05
+*
+* Get a 64-bit bit pattern from an integer
+* script variant. Decimal operands follow
+* legacy integer conversion semantics through
+* ScriptVariant_Integer64Value().
+*/
+static HRESULT ScriptVariant_Bitwise64Value(ScriptVariant *var, uint64_t *pVal) {
+
+    int64_t signed_value;
+
+    if (!var || !pVal) {
+        return E_FAIL;
+    }
+
+    if (var->vt == VT_UINTEGER64) {
+        *pVal = var->ullVal;
+        return S_OK;
+    }
+
+    if (ScriptVariant_Integer64Value(var, &signed_value) != S_OK) {
+        return E_FAIL;
+    }
+
+    *pVal = (uint64_t)signed_value;
+
+    return S_OK;
+}
+
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to support 64-bit
+* integer carriers without narrowing through
+* legacy LONG.
+*
 * Bitwise OR.
-* 
+*
 * i | x
 */
-ScriptVariant *ScriptVariant_Bit_Or( ScriptVariant *svar, ScriptVariant *rightChild )
-{
+ScriptVariant *ScriptVariant_Bit_Or(ScriptVariant *svar, ScriptVariant *rightChild) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    LONG l1, l2;
-    if(ScriptVariant_IntegerValue(svar, &l1) == S_OK &&
-            ScriptVariant_IntegerValue(rightChild, &l2) == S_OK)
-    {
-        retvar.vt = VT_INTEGER;
-        retvar.lVal = l1 | l2;
+
+    /*
+    * Use 64-bit bitwise behavior when either operand
+    * is a 64-bit carrier.
+    */
+    if (ScriptVariant_Is64BitMath(svar, rightChild)) {
+
+        uint64_t left;
+        uint64_t right;
+        uint64_t result_bits;
+
+        if (ScriptVariant_Bitwise64Value(svar, &left) == S_OK &&
+            ScriptVariant_Bitwise64Value(rightChild, &right) == S_OK) {
+
+            result_bits = left | right;
+
+            if (ScriptVariant_IsUnsignedMath(svar, rightChild)) {
+                ScriptVariant_SetUnsignedIntegerResult(&retvar, result_bits, 1);
+
+            } else {
+                int64_t signed_result;
+
+                memcpy(&signed_result, &result_bits, sizeof(signed_result));
+                ScriptVariant_SetSignedIntegerResult(&retvar, signed_result, 1);
+            }
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+
+        return &retvar;
     }
-    else
+
+    /*
+    * Legacy-width bitwise OR. This preserves the old
+    * behavior for VT_INTEGER and decimal operands that
+    * convert to legacy integer width.
+    */
     {
-        ScriptVariant_Clear(&retvar);
+        LONG left;
+        LONG right;
+        ULONG result_bits;
+
+        if (ScriptVariant_IntegerValue(svar, &left) == S_OK &&
+            ScriptVariant_IntegerValue(rightChild, &right) == S_OK) {
+
+            result_bits = ((ULONG)left) | ((ULONG)right);
+
+            ScriptVariant_ChangeType(&retvar, VT_INTEGER);
+            retvar.lVal = (LONG)result_bits;
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
     }
 
     return &retvar;
 }
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to support 64-bit
+* integer carriers without narrowing through
+* legacy LONG.
+*
 * Bitwise XOR.
-* 
+*
 * i ^ x
 */
-ScriptVariant *ScriptVariant_Xor( ScriptVariant *svar, ScriptVariant *rightChild )
-{
+ScriptVariant *ScriptVariant_Xor(ScriptVariant *svar, ScriptVariant *rightChild) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    LONG l1, l2;
-    if(ScriptVariant_IntegerValue(svar, &l1) == S_OK &&
-            ScriptVariant_IntegerValue(rightChild, &l2) == S_OK)
-    {
-        retvar.vt = VT_INTEGER;
-        retvar.lVal = l1 ^ l2;
+
+    /*
+    * Use 64-bit bitwise behavior when either operand
+    * is a 64-bit carrier.
+    */
+    if (ScriptVariant_Is64BitMath(svar, rightChild)) {
+
+        uint64_t left;
+        uint64_t right;
+        uint64_t result_bits;
+
+        if (ScriptVariant_Bitwise64Value(svar, &left) == S_OK &&
+            ScriptVariant_Bitwise64Value(rightChild, &right) == S_OK) {
+
+            result_bits = left ^ right;
+
+            if (ScriptVariant_IsUnsignedMath(svar, rightChild)) {
+                ScriptVariant_SetUnsignedIntegerResult(&retvar, result_bits, 1);
+
+            } else {
+                int64_t signed_result;
+
+                memcpy(&signed_result, &result_bits, sizeof(signed_result));
+                ScriptVariant_SetSignedIntegerResult(&retvar, signed_result, 1);
+            }
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+
+        return &retvar;
     }
-    else
+
+    /*
+    * Legacy-width bitwise XOR. This preserves the old
+    * behavior for VT_INTEGER and decimal operands that
+    * convert to legacy integer width.
+    */
     {
-        ScriptVariant_Clear(&retvar);
+        LONG left;
+        LONG right;
+        ULONG result_bits;
+
+        if (ScriptVariant_IntegerValue(svar, &left) == S_OK &&
+            ScriptVariant_IntegerValue(rightChild, &right) == S_OK) {
+
+            result_bits = ((ULONG)left) ^ ((ULONG)right);
+
+            ScriptVariant_ChangeType(&retvar, VT_INTEGER);
+            retvar.lVal = (LONG)result_bits;
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
     }
 
     return &retvar;
 }
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to support 64-bit
+* integer carriers without narrowing through
+* legacy LONG.
+*
 * Bitwise AND.
-* 
+*
 * i & x
 */
-ScriptVariant *ScriptVariant_Bit_And( ScriptVariant *svar, ScriptVariant *rightChild )
-{
+ScriptVariant *ScriptVariant_Bit_And(ScriptVariant *svar, ScriptVariant *rightChild) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    LONG l1, l2;
-    if(ScriptVariant_IntegerValue(svar, &l1) == S_OK &&
-            ScriptVariant_IntegerValue(rightChild, &l2) == S_OK)
-    {
-        retvar.vt = VT_INTEGER;
-        retvar.lVal = l1 & l2;
+
+    /*
+    * Use 64-bit bitwise behavior when either operand
+    * is a 64-bit carrier.
+    */
+    if (ScriptVariant_Is64BitMath(svar, rightChild)) {
+
+        uint64_t left;
+        uint64_t right;
+        uint64_t result_bits;
+
+        if (ScriptVariant_Bitwise64Value(svar, &left) == S_OK &&
+            ScriptVariant_Bitwise64Value(rightChild, &right) == S_OK) {
+
+            result_bits = left & right;
+
+            if (ScriptVariant_IsUnsignedMath(svar, rightChild)) {
+                ScriptVariant_SetUnsignedIntegerResult(&retvar, result_bits, 1);
+
+            } else {
+                int64_t signed_result;
+
+                memcpy(&signed_result, &result_bits, sizeof(signed_result));
+                ScriptVariant_SetSignedIntegerResult(&retvar, signed_result, 1);
+            }
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
+
+        return &retvar;
     }
-    else
+
+    /*
+    * Legacy-width bitwise AND. This preserves the old
+    * behavior for VT_INTEGER and decimal operands that
+    * convert to legacy integer width.
+    */
     {
-        ScriptVariant_Clear(&retvar);
+        LONG left;
+        LONG right;
+        ULONG result_bits;
+
+        if (ScriptVariant_IntegerValue(svar, &left) == S_OK &&
+            ScriptVariant_IntegerValue(rightChild, &right) == S_OK) {
+
+            result_bits = ((ULONG)left) & ((ULONG)right);
+
+            ScriptVariant_ChangeType(&retvar, VT_INTEGER);
+            retvar.lVal = (LONG)result_bits;
+
+        } else {
+            ScriptVariant_Clear(&retvar);
+        }
     }
 
     return &retvar;
 }
 
 /*
+* Caskey, Damon V.
+* Original author White Dragon, then fixed by Plombo. Dates unknown.
+*
+* Reworked 2026-06-05 to apply bitwise NOT
+* through unsigned bit patterns for integer
+* carriers.
+*
+* Bitwise NOT.
+*
+* ~i
+*/
+void ScriptVariant_Bitwise_Not(ScriptVariant *svar) {
+
+    switch (svar->vt) {
+        case VT_INTEGER: {
+            ULONG result_bits;
+
+            /*
+            * Preserve legacy-width bitwise behavior.
+            */
+            result_bits = ~((ULONG)svar->lVal);
+            svar->lVal = (LONG)result_bits;
+            break;
+        }
+
+        case VT_INTEGER64: {
+            uint64_t result_bits;
+            int64_t signed_result;
+
+            result_bits = ~((uint64_t)svar->llVal);
+            memcpy(&signed_result, &result_bits, sizeof(signed_result));
+
+            svar->llVal = signed_result;
+            break;
+        }
+
+        case VT_UINTEGER64:
+            svar->ullVal = ~(svar->ullVal);
+            break;
+
+        default:
+            break;
+    }
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-05
+*
+* Check if a variant is one of the integer
+* carrier types.
+*/
+static int ScriptVariant_IsIntegerType(ScriptVariant *var) {
+
+    return var->vt == VT_INTEGER ||
+           var->vt == VT_INTEGER64 ||
+           var->vt == VT_UINTEGER64;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-05
+*
+* Compare two integer script variants without
+* converting through DOUBLE.
+*
+* Sets result to:
+*   -1 if left is less than right
+*    0 if left equals right
+*    1 if left is greater than right
+*
+* Handles signed and unsigned 64-bit carriers
+* without wrapping negative signed values into
+* unsigned space.
+*/
+static HRESULT ScriptVariant_CompareIntegerValues(ScriptVariant *left, ScriptVariant *right, int *result) {
+
+    int64_t signed_left;
+    int64_t signed_right;
+    uint64_t unsigned_left;
+    uint64_t unsigned_right;
+
+    if (!left || !right || !result) {
+        return E_FAIL;
+    }
+
+    if (!ScriptVariant_IsIntegerType(left) || !ScriptVariant_IsIntegerType(right)) {
+        return E_FAIL;
+    }
+
+    /*
+    * Unsigned against unsigned can compare directly.
+    */
+    if (left->vt == VT_UINTEGER64 && right->vt == VT_UINTEGER64) {
+
+        if (left->ullVal < right->ullVal) {
+            *result = -1;
+        
+        } else if (left->ullVal > right->ullVal) {
+            *result = 1;
+        
+        } else {
+            *result = 0;
+        }
+
+        return S_OK;
+    }
+
+    /*
+    * Unsigned left against signed right.
+    */
+    if (left->vt == VT_UINTEGER64) {
+
+        if (ScriptVariant_Integer64Value(right, &signed_right) != S_OK) {
+            return E_FAIL;
+        }
+
+        /*
+        * Any unsigned value is greater than a negative
+        * signed value.
+        */
+        if (signed_right < 0) {
+            *result = 1;
+            return S_OK;
+        }
+
+        unsigned_left = left->ullVal;
+        unsigned_right = (uint64_t)signed_right;
+
+        if (unsigned_left < unsigned_right) {
+            *result = -1;
+        
+        } else if (unsigned_left > unsigned_right) {
+            *result = 1;
+        
+        } else {
+            *result = 0;
+        }
+
+        return S_OK;
+    }
+
+    /*
+    * Signed left against unsigned right.
+    */
+    if (right->vt == VT_UINTEGER64) {
+
+        if (ScriptVariant_Integer64Value(left, &signed_left) != S_OK) {
+            return E_FAIL;
+        }
+
+        /*
+        * Any negative signed value is less than any
+        * unsigned value.
+        */
+        if (signed_left < 0) {
+            *result = -1;
+            return S_OK;
+        }
+
+        unsigned_left = (uint64_t)signed_left;
+        unsigned_right = right->ullVal;
+
+        if (unsigned_left < unsigned_right) {
+            *result = -1;
+        
+        } else if (unsigned_left > unsigned_right) {
+            *result = 1;
+        
+        } else {
+            *result = 0;
+        }
+
+        return S_OK;
+    }
+
+    /*
+    * Signed against signed can compare directly.
+    */
+    if (ScriptVariant_Integer64Value(left, &signed_left) != S_OK ||
+        ScriptVariant_Integer64Value(right, &signed_right) != S_OK) {
+        return E_FAIL;
+    }
+
+    if (signed_left < signed_right) {
+        *result = -1;
+    
+    } else if (signed_left > signed_right) {
+        *result = 1;
+    
+    } else {
+        *result = 0;
+    }
+
+    return S_OK;
+}
+
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Equal.
-* 
+*
 * i == x
 */
-ScriptVariant *ScriptVariant_Eq( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Eq(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer equality should remain in integer space
+    * so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+            retvar.lVal = (compare_result == 0);
+        
+        } else {
+            retvar.lVal = 0;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
         retvar.lVal = (dbl1 == dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+    
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = !(strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal)));
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+    
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal == rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY && rightChild->vt == VT_EMPTY)
-    {
+    
+    } else if (svar->vt == VT_EMPTY && rightChild->vt == VT_EMPTY) {
         retvar.lVal = 1;
-    }
-    else
-    {
+    
+    } else {
         retvar.lVal = !(memcmp(svar, rightChild, sizeof(ScriptVariant)));
     }
 
@@ -834,34 +1243,61 @@ ScriptVariant *ScriptVariant_Eq( ScriptVariant *svar, ScriptVariant *rightChild 
 }
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Not equal.
-* 
+*
 * i != x
 */
-ScriptVariant *ScriptVariant_Ne( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Ne(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer inequality should remain in integer
+    * space so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+            retvar.lVal = (compare_result != 0);
+
+        } else {
+            retvar.lVal = 1;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
         retvar.lVal = (dbl1 != dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal));
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal != rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY && rightChild->vt == VT_EMPTY)
-    {
+
+    } else if (svar->vt == VT_EMPTY && rightChild->vt == VT_EMPTY) {
         retvar.lVal = 0;
-    }
-    else
-    {
+
+    } else {
         retvar.lVal = (memcmp(svar, rightChild, sizeof(ScriptVariant)) != 0);
     }
 
@@ -869,34 +1305,62 @@ ScriptVariant *ScriptVariant_Ne( ScriptVariant *svar, ScriptVariant *rightChild 
 }
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Less than.
-* 
+*
 * i < x
 */
-ScriptVariant *ScriptVariant_Lt( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Lt(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer comparison should remain in integer
+    * space so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+            retvar.lVal = (compare_result < 0);
+
+        } else {
+            retvar.lVal = 0;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
+
         retvar.lVal = (dbl1 < dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = (strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal)) < 0);
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal < rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY)
-    {
+
+    } else if (svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY) {
         retvar.lVal = 0;
-    }
-    else
-    {
+
+    } else {
         retvar.lVal = (memcmp(svar, rightChild, sizeof(ScriptVariant)) < 0);
     }
 
@@ -905,34 +1369,63 @@ ScriptVariant *ScriptVariant_Lt( ScriptVariant *svar, ScriptVariant *rightChild 
 
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Greater than.
-* 
+*
 * i > x
 */
-ScriptVariant *ScriptVariant_Gt( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Gt(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer comparison should remain in integer
+    * space so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+
+            retvar.lVal = (compare_result > 0);
+
+        } else {
+            retvar.lVal = 0;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
+        
         retvar.lVal = (dbl1 > dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = (strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal)) > 0);
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal > rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY)
-    {
+
+    } else if (svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY) {
         retvar.lVal = 0;
-    }
-    else
-    {
+
+    } else {
         retvar.lVal = (memcmp(svar, rightChild, sizeof(ScriptVariant)) > 0);
     }
 
@@ -941,34 +1434,61 @@ ScriptVariant *ScriptVariant_Gt( ScriptVariant *svar, ScriptVariant *rightChild 
 
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Greater than or equal to.
-* 
+*
 * i >= x
 */
-ScriptVariant *ScriptVariant_Ge( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Ge(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer comparison should remain in integer
+    * space so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+            retvar.lVal = (compare_result >= 0);
+
+        } else {
+            retvar.lVal = 0;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
         retvar.lVal = (dbl1 >= dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = (strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal)) >= 0);
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal >= rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY)
-    {
+
+    } else if (svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY) {
         retvar.lVal = 0;
-    }
-    else
-    {
+
+    } else {
         retvar.lVal = (memcmp(svar, rightChild, sizeof(ScriptVariant)) >= 0);
     }
 
@@ -977,34 +1497,61 @@ ScriptVariant *ScriptVariant_Ge( ScriptVariant *svar, ScriptVariant *rightChild 
 
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to compare 64-bit
+* integer carriers without converting through
+* DOUBLE.
+*
 * Less than or equal to.
-* 
+*
 * i <= x
 */
-ScriptVariant *ScriptVariant_Le( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    DOUBLE dbl1, dbl2;
+ScriptVariant *ScriptVariant_Le(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    DOUBLE dbl1;
+    DOUBLE dbl2;
+    int compare_result;
     static ScriptVariant retvar = {{.lVal = 0}, VT_INTEGER};
 
-    if(ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
-            ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK)
-    {
+    retvar.vt = VT_INTEGER;
+
+    /*
+    * Integer comparison should remain in integer
+    * space so large 64-bit values compare exactly.
+    */
+    if (ScriptVariant_IsIntegerType(svar) &&
+        ScriptVariant_IsIntegerType(rightChild)) {
+
+        if (ScriptVariant_CompareIntegerValues(svar, rightChild, &compare_result) == S_OK) {
+            retvar.lVal = (compare_result <= 0);
+
+        } else {
+            retvar.lVal = 0;
+        }
+
+        return &retvar;
+    }
+
+    /*
+    * Decimal comparison keeps legacy behavior when
+    * either side is actually decimal.
+    */
+    if (ScriptVariant_DecimalValue(svar, &dbl1) == S_OK &&
+        ScriptVariant_DecimalValue(rightChild, &dbl2) == S_OK) {
         retvar.lVal = (dbl1 <= dbl2);
-    }
-    else if(svar->vt == VT_STR && rightChild->vt == VT_STR)
-    {
+
+    } else if (svar->vt == VT_STR && rightChild->vt == VT_STR) {
         retvar.lVal = (strcmp(StrCache_Get(svar->strVal), StrCache_Get(rightChild->strVal)) <= 0);
-    }
-    else if(svar->vt == VT_PTR && rightChild->vt == VT_PTR)
-    {
+
+    } else if (svar->vt == VT_PTR && rightChild->vt == VT_PTR) {
         retvar.lVal = (svar->ptrVal <= rightChild->ptrVal);
-    }
-    else if(svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY)
-    {
+
+    } else if (svar->vt == VT_EMPTY || rightChild->vt == VT_EMPTY) {
         retvar.lVal = 0;
-    }
-    else
-    {
+
+    } else {
         retvar.lVal = (memcmp(svar, rightChild, sizeof(ScriptVariant)) <= 0);
     }
 
@@ -1013,21 +1560,123 @@ ScriptVariant *ScriptVariant_Le( ScriptVariant *svar, ScriptVariant *rightChild 
 
 
 /*
-* Left bitwise shift.
+* Caskey, Damon V.
+* 2026-06-05
+*
+* Get a non-negative shift count from a variant.
+* Decimal operands follow legacy integer conversion
+* semantics through ScriptVariant_Integer64Value().
 */
-ScriptVariant *ScriptVariant_Shl( ScriptVariant *svar, ScriptVariant *rightChild )
-{
-    static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    LONG l1, l2;
-    if(ScriptVariant_IntegerValue(svar, &l1) == S_OK &&
-            ScriptVariant_IntegerValue(rightChild, &l2) == S_OK)
-    {
-        retvar.vt = VT_INTEGER;
-        retvar.lVal = ((ULONG)l1) << ((ULONG)l2);
+static HRESULT ScriptVariant_ShiftCountValue(ScriptVariant *var, uint64_t *pVal) {
+
+    int64_t signed_value;
+
+    if (!var || !pVal) {
+        return E_FAIL;
     }
-    else
-    {
+
+    if (var->vt == VT_UINTEGER64) {
+        *pVal = var->ullVal;
+        return S_OK;
+    }
+
+    if (ScriptVariant_Integer64Value(var, &signed_value) != S_OK ||
+        signed_value < 0) {
+        return E_FAIL;
+    }
+
+    *pVal = (uint64_t)signed_value;
+
+    return S_OK;
+}
+
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to support 64-bit
+* integer carriers and to avoid undefined
+* shift counts.
+*
+* Left bitwise shift.
+*
+* i << x
+*/
+ScriptVariant *ScriptVariant_Shl(ScriptVariant *svar, ScriptVariant *rightChild) {
+
+    static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
+    uint64_t shift_count;
+
+    if (ScriptVariant_ShiftCountValue(rightChild, &shift_count) != S_OK) {
         ScriptVariant_Clear(&retvar);
+        return &retvar;
+    }
+
+    /*
+    * Unsigned 64-bit left shift.
+    */
+    if (svar->vt == VT_UINTEGER64) {
+
+        uint64_t result;
+
+        if (shift_count >= 64) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result = svar->ullVal << shift_count;
+
+        ScriptVariant_SetUnsignedIntegerResult(&retvar, result, 1);
+
+        return &retvar;
+    }
+
+    /*
+    * Signed 64-bit left shift.
+    *
+    * Shift as bits to avoid signed left-shift
+    * overflow, then preserve the resulting bit
+    * pattern in a signed 64-bit carrier.
+    */
+    if (svar->vt == VT_INTEGER64) {
+
+        int64_t left;
+        int64_t signed_result;
+        uint64_t result_bits;
+
+        if (shift_count >= 64 ||
+            ScriptVariant_Integer64Value(svar, &left) != S_OK) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result_bits = ((uint64_t)left) << shift_count;
+        memcpy(&signed_result, &result_bits, sizeof(signed_result));
+
+        ScriptVariant_SetSignedIntegerResult(&retvar, signed_result, 1);
+
+        return &retvar;
+    }
+
+    /*
+    * Legacy-width left shift. This preserves the old
+    * ULONG shift behavior for VT_INTEGER and decimal
+    * operands that can convert to legacy integer width.
+    */
+    {
+        LONG left;
+        ULONG result;
+
+        if (shift_count >= (uint64_t)(sizeof(ULONG) * CHAR_BIT) ||
+            ScriptVariant_IntegerValue(svar, &left) != S_OK) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result = ((ULONG)left) << shift_count;
+
+        ScriptVariant_ChangeType(&retvar, VT_INTEGER);
+        retvar.lVal = (LONG)result;
     }
 
     return &retvar;
@@ -1035,21 +1684,91 @@ ScriptVariant *ScriptVariant_Shl( ScriptVariant *svar, ScriptVariant *rightChild
 
 
 /*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to support 64-bit
+* integer carriers and to avoid undefined
+* shift counts.
+*
 * Right bitwise shift.
+*
+* i >> x
 */
-ScriptVariant *ScriptVariant_Shr( ScriptVariant *svar, ScriptVariant *rightChild )
-{
+ScriptVariant *ScriptVariant_Shr(ScriptVariant *svar, ScriptVariant *rightChild) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
-    LONG l1, l2;
-    if(ScriptVariant_IntegerValue(svar, &l1) == S_OK &&
-            ScriptVariant_IntegerValue(rightChild, &l2) == S_OK)
-    {
-        retvar.vt = VT_INTEGER;
-        retvar.lVal = ((ULONG)l1) >> ((ULONG)l2);
-    }
-    else
-    {
+    uint64_t shift_count;
+
+    if (ScriptVariant_ShiftCountValue(rightChild, &shift_count) != S_OK) {
         ScriptVariant_Clear(&retvar);
+        return &retvar;
+    }
+
+    /*
+    * Unsigned 64-bit right shift.
+    */
+    if (svar->vt == VT_UINTEGER64) {
+
+        uint64_t result;
+
+        if (shift_count >= 64) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result = svar->ullVal >> (unsigned int)shift_count;
+
+        ScriptVariant_SetUnsignedIntegerResult(&retvar, result, 1);
+
+        return &retvar;
+    }
+
+    /*
+    * Signed 64-bit right shift.
+    *
+    * Shift as bits to preserve the legacy logical
+    * right-shift behavior from the old ULONG cast.
+    */
+    if (svar->vt == VT_INTEGER64) {
+
+        int64_t left;
+        int64_t signed_result;
+        uint64_t result_bits;
+
+        if (shift_count >= 64 ||
+            ScriptVariant_Integer64Value(svar, &left) != S_OK) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result_bits = ((uint64_t)left) >> (unsigned int)shift_count;
+        memcpy(&signed_result, &result_bits, sizeof(signed_result));
+
+        ScriptVariant_SetSignedIntegerResult(&retvar, signed_result, 1);
+
+        return &retvar;
+    }
+
+    /*
+    * Legacy-width right shift. This preserves the old
+    * ULONG shift behavior for VT_INTEGER and decimal
+    * operands that can convert to legacy integer width.
+    */
+    {
+        LONG left;
+        ULONG result;
+
+        if (shift_count >= (uint64_t)(sizeof(ULONG) * CHAR_BIT) ||
+            ScriptVariant_IntegerValue(svar, &left) != S_OK) {
+            ScriptVariant_Clear(&retvar);
+            return &retvar;
+        }
+
+        result = ((ULONG)left) >> (unsigned int)shift_count;
+
+        ScriptVariant_ChangeType(&retvar, VT_INTEGER);
+        retvar.lVal = (LONG)result;
     }
 
     return &retvar;
@@ -1743,24 +2462,67 @@ ScriptVariant *ScriptVariant_Mod(ScriptVariant *svar, ScriptVariant *rightChild)
 
 // Unary Operations
 
-// ++i
-void ScriptVariant_Inc_Op(ScriptVariant *svar )
-{
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to avoid signed
+* overflow when incrementing integer carriers.
+*
+* Pre-increments a script variant in place.
+*
+* ++i
+*/
+void ScriptVariant_Inc_Op(ScriptVariant *svar) {
+
     switch(svar->vt) {
         case VT_DECIMAL:
             ++(svar->dblVal);
             break;
 
-        case VT_INTEGER:
-            ++(svar->lVal);
+        case VT_INTEGER: {
+            int64_t value;
+
+            value = (int64_t)svar->lVal;
+
+            /*
+            * Cannot represent INT64_MAX + 1.
+            */
+            if (value == INT64_MAX) {
+                break;
+            }
+
+            value++;
+
+            /*
+            * This may promote LONG_MAX to VT_INTEGER64
+            * on platforms where LONG is narrower than
+            * int64_t.
+            */
+            ScriptVariant_SetSignedIntegerResult(svar, value, 0);
             break;
+        }
 
         case VT_INTEGER64:
-            ++(svar->llVal);
+            /*
+            * Cannot represent INT64_MAX + 1.
+            */
+            if (svar->llVal == INT64_MAX) {
+                break;
+            }
+
+            ScriptVariant_SetSignedIntegerResult(svar, svar->llVal + 1, 1);
             break;
 
         case VT_UINTEGER64:
-            ++(svar->ullVal);
+            /*
+            * Do not wrap UINT64_MAX back to zero.
+            */
+            if (svar->ullVal == UINT64_MAX) {
+                break;
+            }
+
+            ScriptVariant_SetUnsignedIntegerResult(svar, svar->ullVal + 1, 1);
             break;
 
         default:
@@ -1768,26 +2530,75 @@ void ScriptVariant_Inc_Op(ScriptVariant *svar )
     }
 }
 
-// i++
-ScriptVariant *ScriptVariant_Inc_Op2(ScriptVariant *svar )
-{
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to avoid signed
+* overflow when post-incrementing integer
+* carriers.
+*
+* Post-increments a script variant in place,
+* returning the previous value.
+*
+* i++
+*/
+ScriptVariant *ScriptVariant_Inc_Op2(ScriptVariant *svar) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
+
     ScriptVariant_Copy(&retvar, svar);
 
     switch(svar->vt) {
-
         case VT_DECIMAL:
             svar->dblVal++;
             break;
-        case VT_INTEGER:
-            svar->lVal++;
+
+        case VT_INTEGER: {
+            int64_t value;
+
+            value = (int64_t)svar->lVal;
+
+            /*
+            * Cannot represent INT64_MAX + 1.
+            */
+            if (value == INT64_MAX) {
+                break;
+            }
+
+            value++;
+
+            /*
+            * This may promote LONG_MAX to VT_INTEGER64
+            * on platforms where LONG is narrower than
+            * int64_t.
+            */
+            ScriptVariant_SetSignedIntegerResult(svar, value, 0);
             break;
+        }
+
         case VT_INTEGER64:
-            svar->llVal++;
+            /*
+            * Cannot represent INT64_MAX + 1.
+            */
+            if (svar->llVal == INT64_MAX) {
+                break;
+            }
+
+            ScriptVariant_SetSignedIntegerResult(svar, svar->llVal + 1, 1);
             break;
+
         case VT_UINTEGER64:
-            svar->ullVal++;
+            /*
+            * Do not wrap UINT64_MAX back to zero.
+            */
+            if (svar->ullVal == UINT64_MAX) {
+                break;
+            }
+
+            ScriptVariant_SetUnsignedIntegerResult(svar, svar->ullVal + 1, 1);
             break;
+
         default:
             ScriptVariant_Clear(&retvar);
             break;
@@ -1796,25 +2607,66 @@ ScriptVariant *ScriptVariant_Inc_Op2(ScriptVariant *svar )
     return &retvar;
 }
 
-// --i
-void ScriptVariant_Dec_Op(ScriptVariant *svar )
-{
-    switch(svar->vt) {
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to avoid signed
+* underflow when decrementing integer carriers.
+*
+* Pre-decrements a script variant in place.
+*
+* --i
+*/
+void ScriptVariant_Dec_Op(ScriptVariant *svar) {
 
+    switch(svar->vt) {
         case VT_DECIMAL:
             --(svar->dblVal);
             break;
 
-        case VT_INTEGER:
-            --(svar->lVal);
+        case VT_INTEGER: {
+            int64_t value;
+
+            value = (int64_t)svar->lVal;
+
+            /*
+            * Cannot represent INT64_MIN - 1.
+            */
+            if (value == INT64_MIN) {
+                break;
+            }
+
+            value--;
+
+            /*
+            * This keeps the result as VT_INTEGER when
+            * it fits legacy width, otherwise promotes.
+            */
+            ScriptVariant_SetSignedIntegerResult(svar, value, 0);
             break;
+        }
 
         case VT_INTEGER64:
-            --(svar->llVal);
+            /*
+            * Cannot represent INT64_MIN - 1.
+            */
+            if (svar->llVal == INT64_MIN) {
+                break;
+            }
+
+            ScriptVariant_SetSignedIntegerResult(svar, svar->llVal - 1, 1);
             break;
 
         case VT_UINTEGER64:
-            --(svar->ullVal);
+            /*
+            * Do not wrap 0 down to UINT64_MAX.
+            */
+            if (svar->ullVal == 0) {
+                break;
+            }
+
+            ScriptVariant_SetUnsignedIntegerResult(svar, svar->ullVal - 1, 1);
             break;
 
         default:
@@ -1822,26 +2674,74 @@ void ScriptVariant_Dec_Op(ScriptVariant *svar )
     }
 }
 
-// i--
-ScriptVariant *ScriptVariant_Dec_Op2(ScriptVariant *svar )
-{
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to avoid signed
+* underflow when post-decrementing integer
+* carriers.
+*
+* Post-decrements a script variant in place,
+* returning the previous value.
+*
+* i--
+*/
+ScriptVariant *ScriptVariant_Dec_Op2(ScriptVariant *svar) {
+
     static ScriptVariant retvar = {{.ptrVal = NULL}, VT_EMPTY};
+
     ScriptVariant_Copy(&retvar, svar);
 
     switch(svar->vt) {
-
         case VT_DECIMAL:
             svar->dblVal--;
             break;
-        case VT_INTEGER:
-            svar->lVal--;
+
+        case VT_INTEGER: {
+            int64_t value;
+
+            value = (int64_t)svar->lVal;
+
+            /*
+            * Cannot represent INT64_MIN - 1.
+            */
+            if (value == INT64_MIN) {
+                break;
+            }
+
+            value--;
+
+            /*
+            * This keeps the result as VT_INTEGER when
+            * it fits legacy width, otherwise promotes.
+            */
+            ScriptVariant_SetSignedIntegerResult(svar, value, 0);
             break;
+        }
+
         case VT_INTEGER64:
-            svar->llVal--;
+            /*
+            * Cannot represent INT64_MIN - 1.
+            */
+            if (svar->llVal == INT64_MIN) {
+                break;
+            }
+
+            ScriptVariant_SetSignedIntegerResult(svar, svar->llVal - 1, 1);
             break;
+
         case VT_UINTEGER64:
-            svar->ullVal--;
+            /*
+            * Do not wrap 0 down to UINT64_MAX.
+            */
+            if (svar->ullVal == 0) {
+                break;
+            }
+
+            ScriptVariant_SetUnsignedIntegerResult(svar, svar->ullVal - 1, 1);
             break;
+
         default:
             ScriptVariant_Clear(&retvar);
             break;
@@ -1864,29 +2764,66 @@ void ScriptVariant_Pos( ScriptVariant *svar) {
     return svar;*/
 }
 
-//-i
-void ScriptVariant_Neg( ScriptVariant *svar) {
-    
+/*
+* Caskey, Damon V.
+* Original author (Utunnels?) and date unknown.
+*
+* Reworked 2026-06-05 to avoid signed
+* overflow when negating integer carriers.
+*
+* Negates a script variant in place.
+*
+* -i
+*/
+void ScriptVariant_Neg(ScriptVariant *svar) {
+
     switch(svar->vt) {
         case VT_DECIMAL:
             svar->dblVal = -(svar->dblVal);
             break;
 
-        case VT_INTEGER:
-            svar->lVal = -(svar->lVal);
+        case VT_INTEGER: {
+            int64_t value;
+            int64_t result;
+
+            value = (int64_t)svar->lVal;
+
+            /*
+            * Cannot represent -INT64_MIN.
+            */
+            if (value == INT64_MIN) {
+                break;
+            }
+
+            result = -value;
+
+            /*
+            * This may promote LONG_MIN to VT_INTEGER64
+            * on platforms where LONG is narrower than
+            * int64_t.
+            */
+            ScriptVariant_SetSignedIntegerResult(svar, result, 0);
             break;
+        }
 
         case VT_INTEGER64:
-            svar->llVal = -(svar->llVal);
+            /*
+            * Cannot represent -INT64_MIN.
+            */
+            if (svar->llVal == INT64_MIN) {
+                break;
+            }
+
+            ScriptVariant_SetSignedIntegerResult(svar, -(svar->llVal), 1);
             break;
 
         case VT_UINTEGER64:
-            
+
             /*
             * Unsigned values cannot be meaningfully negated.
-            * Convert to signed only if it fits.
+            * Convert to signed only if the positive magnitude
+            * fits in int64_t.
             */
-
             if (svar->ullVal <= (uint64_t)INT64_MAX) {
                 uint64_t temp = svar->ullVal;
 
@@ -1912,27 +2849,6 @@ void ScriptVariant_Boolean_Not(ScriptVariant *svar )
     ScriptVariant_ChangeType(svar, VT_INTEGER);
     svar->lVal = b;
 
-}
-
-// ~i
-void ScriptVariant_Bitwise_Not(ScriptVariant *svar ) {
-
-    switch (svar->vt) {
-        case VT_INTEGER:
-            svar->lVal = ~(svar->lVal);
-            break;
-
-        case VT_INTEGER64:
-            svar->llVal = ~(svar->llVal);
-            break;
-
-        case VT_UINTEGER64:
-            svar->ullVal = ~(svar->ullVal);
-            break;
-
-        default:
-            break;
-    }
 }
 
 
