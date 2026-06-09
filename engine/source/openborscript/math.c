@@ -474,6 +474,31 @@ HRESULT math_atan(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCo
 * Caskey, Damon V.
 * 2026-06-08
 *
+* Get arctangent of Y/X as a decimal degree.
+*/
+HRESULT math_atan2(ScriptVariant **varlist, ScriptVariant **pretvar, int paramCount)
+{
+    DOUBLE y_temp;
+    DOUBLE x_temp;
+
+    if (ScriptVariant_DecimalValue(varlist[0], &y_temp) == S_OK &&
+        ScriptVariant_DecimalValue(varlist[1], &x_temp) == S_OK) {
+
+        ScriptVariant_ChangeType(*pretvar, VT_DECIMAL);
+
+        (*pretvar)->dblVal = (DOUBLE)(atan2((double)y_temp, (double)x_temp) * 180.0 / MATH_PI);
+        
+        return S_OK;
+    }
+
+    *pretvar = NULL;
+    return E_FAIL;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-06-08
+*
 * Get truncated value of a variant as an integer.
 * Preserves legacy VT_INTEGER results when possible
 * and promotes to 64-bit integer carriers when needed.

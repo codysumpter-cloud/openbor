@@ -108,6 +108,10 @@ const char *Script_GetFunctionName(void *functionRef)
     {
         return "atan";
     }
+    else if (functionRef == ((void *)math_atan2))
+    {
+        return "atan2";
+    }
     else if (functionRef == ((void *)math_trunc))
     {
         return "trunc";
@@ -1218,6 +1222,8 @@ void Script_LoadSystemFunctions()
                      (void *)math_acos, "acos");
     List_InsertAfter(&theFunctionList,
                      (void *)math_atan, "atan");
+    List_InsertAfter(&theFunctionList,
+                     (void *)math_atan2, "atan2");
     List_InsertAfter(&theFunctionList,
                      (void *)math_trunc, "trunc");
     List_InsertAfter(&theFunctionList,
