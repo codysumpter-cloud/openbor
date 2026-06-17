@@ -20,17 +20,7 @@
 	http://www.gnu.org/licenses/gpl.txt
 */
 
-#ifndef WIN32
-	#ifndef _FILE_OFFSET_BITS
-		#define _FILE_OFFSET_BITS 64
-	#endif
-	#ifndef _LARGEFILE_SOURCE
-		#define _LARGEFILE_SOURCE 1
-	#endif
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE 1
-	#endif
-#endif
+#include "borpak.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,95 +49,32 @@
 	#define PATHSLASH   '/'
 #endif
 
-#define FNAMEMAX        1024
-
-#define PACK_MAGIC      "PACK"
-#define PACK_MAGIC_LEN  4
-#define PACK_HEADER_SIZE 8
-
-#define PAK32_ENTRY_BASE_SIZE 12U
-#define PAK64_ENTRY_BASE_SIZE 20U
-#define PAK32_FOOTER_SIZE     4U
-#define PAK64_FOOTER_SIZE     8U
 
 /*
-* PAK32 is the compatibility format for older 
-* engines, so the packer keeps its completed 
-* archives under the signed 32-bit file-position 
-* boundary those builds commonly rely on. 
+* File I/O and PAK format handling for borpak.
 *
-* The data section stops at 2,000,000,000 bytes, 
-* leaving the remaining archive budget for every 
-* file table record plus the final 32-bit footer.
+* Header layout:
 *
-* Technically PAK32 format can support up to 4GB 
-* now, and so can latest engine, but there's no
-* use case. Any engine builds that can safely read 
-* >2GB PAK32 archives also support PAK64 format.
+*     bytes 0-3: PACK magic, ASCII "PACK"
+*     bytes 4-7: little-endian uint32
+*
+* PAK32:
+*     50 41 43 4B 00 00 00 00
+*     P  A  C  K  original PACK value 0
+*
+* PAK64:
+*     50 41 43 4B 01 00 00 00
+*     P  A  C  K  PAK64 format id 1
+*
+* Legacy engines only support the original PACK 
+* layout, where bytes 4-7 are 0. PAK32 preserves 
+* that exact header and table/footer layout for
+* compatibility. Newer engines use the same 32-bit 
+* field as a format id: 0 for PAK32, 1 for PAK64.
 */
-#define PAK32_ARCHIVE_LIMIT ((pak_size_t)INT_MAX)
-#define PAK32_DATA_LIMIT    ((pak_size_t)2000000000ULL)
-#define PAK32_TABLE_CUSHION (PAK32_ARCHIVE_LIMIT - PAK32_DATA_LIMIT)
 
-typedef uint32_t pak_u32;
-typedef uint64_t pak_offset_t;
-typedef uint64_t pak_size_t;
-
-/*
-* PAK format enumeration. The packer uses this 
-* to differentiate between the 32-bit and 64-bit
-* PAK formats.
-*/
-typedef enum {
-	PAK_FORMAT_PAK32 = 0U,
-	PAK_FORMAT_PAK64 = 1U
-} pak_format_t;
-
-void file_write(const void *buffer, size_t size, FILE *file_object);
-int pack_file(FILE *pak_file_object, const char *source_file_path, const char *archive_file_path, pak_format_t format);
-void extract_file(FILE *pak_file_object, char *file_path, pak_offset_t data_offset, pak_size_t data_size);
-pak_u32 read_le_uint(FILE *pak_file_object, int bits);
-uint64_t read_le_u64(FILE *pak_file_object);
-void write_le_uint(FILE *pak_file_object, pak_u32 num, int bits);
-void write_le_u64(FILE *pak_file_object, uint64_t value);
-int pack_directory(FILE *pak_file_object, const char *source_directory_path, const char *archive_directory_path, pak_format_t format);
-void write_err(void);
-void std_err(void);
-pak_offset_t pak_tell(FILE *pak_file_object);
-pak_size_t pak_file_size(FILE *file_object);
-void pak_seek_relative(FILE *pak_file_object, int64_t offset, int origin);
-void pak_seek_to_offset(FILE *pak_file_object, pak_offset_t offset);
-void validate_pak32_budget(const char *file_path, pak_offset_t data_offset, pak_size_t data_size, pak_u32 record_size);
-void copy_archive_path(char *destination, size_t destination_size, const char *source);
-void copy_archive_root_from_input_directory(char *destination, size_t destination_size, const char *input_directory);
-void print_format_details(pak_format_t format);
-int is_unsafe_path(const char *name);
-const char *format_name(pak_format_t format);
-
-#ifdef BORPAK_WINPAUSE
-	void winpause(void);
-#endif
-
-/*
-* One file table record kept in memory until 
-* the archive footer table is written.
-*/
-typedef struct {
-	pak_u32      record_size;
-	pak_offset_t data_offset;
-	pak_size_t   data_size;
-	char         *name;
-} pak_entry_t;
-
-/*
-* Linked list node for deferred table records.
-* File data is written first, then this list is 
-* walked to write the final archive table.
-*/
-typedef struct pak_entry_node_t {
-	pak_entry_t              entry;
-	struct pak_entry_node_t *next;
-} pak_entry_node_t;
+static const unsigned char pack_magic_bytes[PACK_MAGIC_BYTE_COUNT] = { 'P', 'A', 'C', 'K' };
+static const size_t 		pack_magic_len = sizeof(pack_magic_bytes);
 
 static pak_entry_node_t *pak_entries = NULL;
 static pak_size_t pak_table_size = 0;
@@ -160,9 +87,9 @@ const char *format_name(pak_format_t format) {
 * Limits for PAK32 format in gigabytes for 
 * user-friendly display.
 */
-const double pak32_data_limit_gb = (double)PAK32_DATA_LIMIT / 1000000000.0;
-const double pak32_table_cushion_gb = (double)PAK32_TABLE_CUSHION / 1000000000.0;
-const double pak32_archive_limit_gb = (double)PAK32_ARCHIVE_LIMIT / 1000000000.0;
+static const double pak32_data_limit_gb = (double)PAK32_DATA_LIMIT / 1000000000.0;
+static const double pak32_table_cushion_gb = (double)PAK32_TABLE_CUSHION / 1000000000.0;
+static const double pak32_archive_limit_gb = (double)PAK32_ARCHIVE_LIMIT / 1000000000.0;
 
 /*
 * Caskey, Damon V.
@@ -362,7 +289,7 @@ void copy_archive_root_from_input_directory(char *destination, size_t destinatio
 	const char *component_end;
 	const char *component_start;
 	size_t component_length;
-	char component[FNAMEMAX];
+	char component[FILE_NAME_MAX_LEN];
 
 	if(destination_size == 0) {
 		return;
@@ -490,8 +417,8 @@ int is_unsafe_path(const char *name) {
 
 int main(int argc, char *argv[]) {
 
-	struct pak_entry_node_t *entry_node;
-	struct pak_entry_node_t *entry_node_free;
+	pak_entry_node_t *entry_node;
+	pak_entry_node_t *entry_node_free;
 	
 	pak_entry_t    entry;
 	FILE    *pak_file_object;
@@ -510,9 +437,9 @@ int main(int argc, char *argv[]) {
 	int 	fgetc_result = 0;
 	pak_format_t format = PAK_FORMAT_PAK32;
 
-	unsigned char magic[PACK_MAGIC_LEN];
+	unsigned char pack_magic_buffer[PACK_MAGIC_BYTE_COUNT];
 	char	curdir[512];
-	char	archive_root[FNAMEMAX];
+	char	archive_root[FILE_NAME_MAX_LEN];
 	char	*input_dir    = NULL;
 	char	*pattern      = NULL;
 	char	*pak_filename;
@@ -562,11 +489,11 @@ int main(int argc, char *argv[]) {
 			 break;
 		}
 		
-		if(!strcmp(argv[i], "-f") || !strcmp(argv[i], "--format")) {
+		if(!strcmp(argv[i], "-f")) {
 			const char *format_argument;
 
 			if(i + 1 >= argc) {
-				printf("\nError: missing argument for -format option\n\n");
+				printf("\nError: missing argument for -f option\n\n");
 				exit(1);
 			}
 
@@ -576,7 +503,7 @@ int main(int argc, char *argv[]) {
 			} else if(!strcmp(format_argument, "pak64")) {
 				format = PAK_FORMAT_PAK64;
 			} else {
-				printf("\nError: invalid format specified for -format option\n\n");
+				printf("\nError: invalid format specified for -f option\n\n");
 				exit(1);
 			}
 
@@ -660,7 +587,7 @@ int main(int argc, char *argv[]) {
 			std_err();
 		}
 
-		file_write(PACK_MAGIC, PACK_MAGIC_LEN, pak_file_object);
+		file_write(pack_magic_bytes, pack_magic_len, pak_file_object);
 		write_le_uint(pak_file_object, pack_format_id, 32);
 
 		/* 
@@ -754,11 +681,11 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		if(fread(magic, 1, PACK_MAGIC_LEN, pak_file_object) != PACK_MAGIC_LEN) {
+		if(fread(pack_magic_buffer, 1, pack_magic_len, pak_file_object) != pack_magic_len) {
 			goto quit;
 		}
 
-		if(memcmp(magic, PACK_MAGIC, PACK_MAGIC_LEN)) {
+		if(memcmp(pack_magic_buffer, pack_magic_bytes, pack_magic_len) != 0) {
 			printf("\nError: unsupported pack format\n");
 			goto quit;
 		}
@@ -889,7 +816,7 @@ quit:
 
 int pack_file(FILE *pak_file_object, const char *source_file_path, const char *archive_file_path, pak_format_t format) {
 
-	struct  pak_entry_node_t   *entry_node;
+	pak_entry_node_t   *entry_node;
 	FILE    *source_file_object;
 	size_t  bytes_read;
 	size_t  name_length;
@@ -900,7 +827,7 @@ int pack_file(FILE *pak_file_object, const char *source_file_path, const char *a
 	pak_u32 record_size;
 
 	unsigned char 	copy_buffer[8192];
-	char archive_name[FNAMEMAX];
+	char archive_name[FILE_NAME_MAX_LEN];
 
 	copy_archive_path(archive_name, sizeof(archive_name), archive_file_path);
 	if(!archive_name[0]) {
@@ -951,7 +878,7 @@ int pack_file(FILE *pak_file_object, const char *source_file_path, const char *a
 	for(entry_node = pak_entries; entry_node && entry_node->next; entry_node = entry_node->next);
 
 	if(entry_node) {
-		entry_node->next = malloc(sizeof(struct pak_entry_node_t));
+		entry_node->next = malloc(sizeof(pak_entry_node_t));
 
 		if(!entry_node->next) { 
 			std_err();
@@ -959,7 +886,7 @@ int pack_file(FILE *pak_file_object, const char *source_file_path, const char *a
 		entry_node       = entry_node->next;
 
 	} else {
-		pak_entries      = malloc(sizeof(struct pak_entry_node_t));
+		pak_entries      = malloc(sizeof(pak_entry_node_t));
 
 		if(!pak_entries) { 
 			std_err();
@@ -1097,8 +1024,8 @@ void write_le_u64(FILE *pak_file_object, uint64_t value) {
 }
 
 int pack_directory(FILE *pak_file_object, const char *source_directory_path, const char *archive_directory_path, pak_format_t format) {
-	char  child_source_path[FNAMEMAX];
-	char  child_archive_path[FNAMEMAX];
+	char  child_source_path[FILE_NAME_MAX_LEN];
+	char  child_archive_path[FILE_NAME_MAX_LEN];
 
 	struct  stat    path_status;
 	struct  dirent  **namelist;
