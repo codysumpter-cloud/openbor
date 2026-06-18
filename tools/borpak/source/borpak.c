@@ -242,20 +242,78 @@ void validate_pak32_budget(const char *file_path, pak_offset_t data_offset, pak_
 * Caskey, Damon V.
 * 2026-06-10
 *
-* Copies a path into the archive table using 
-* legacy OpenBOR pack naming: forward slashes 
-* become backslashes, and a leading "./" is 
-* ignored. Source paths and archive paths are 
-* handled separately so absolute -d paths do not
-* leak host-specific prefixes such as /home/user/project 
-* into the pack table.
+* Validates that an archive path contains 
+* only allowed characters. Returns 1 on pass
+* and 0 on failure.
 */
-void copy_archive_path(char *destination, size_t destination_size, const char *source) {
+static int is_archive_path_character_allowed(unsigned char character) {
+	
+	/* 
+	* Check if the character is an uppercase letter.
+	*/
+	if(character >= 'A' && character <= 'Z') {
+		return 1;
+	}
+
+	/* 
+	* Check if the character is a lowercase letter.
+	*/
+	if(character >= 'a' && character <= 'z') {
+		return 1;
+	}
+
+	/* 
+	* Check if the character is a digit.
+	*/
+	if(character >= '0' && character <= '9') {
+		return 1;
+	}
+
+	/* 
+	* Check if the character is an allowed punctuation mark.
+	*/
+	switch(character) {
+		case '/':
+		case '\\':
+		case '.':
+		case '_':
+		case '-':
+			return 1;
+		default:
+			return 0;
+	}
+}
+
+int validate_archive_path(const char *archive_path, const char *source_file_path) {
+	size_t character_index;
+	unsigned char character;
+
+	if(!archive_path || !archive_path[0]) {
+		printf("\nError: empty archive path for %s\n", source_file_path ? source_file_path : "(unknown source)");
+		return 0;
+	}
+
+	for(character_index = 0; archive_path[character_index]; character_index++) {
+		character = (unsigned char)archive_path[character_index];
+
+		if(!is_archive_path_character_allowed(character)) {
+			printf("\nError: invalid archive path character in %s\n", archive_path);
+			printf("Source file: %s\n", source_file_path ? source_file_path : "(unknown source)");
+			printf("Invalid byte: 0x%02x at position %zu\n", (unsigned int)character, character_index);
+			printf("Archive paths may only use A-Z, a-z, 0-9, slash, backslash, dot, underscore, and hyphen.\n");
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+int copy_archive_path(char *destination, size_t destination_size, const char *source) {
 	size_t source_index = 0;
 	size_t destination_index = 0;
 
 	if(destination_size == 0) {
-		return;
+		return 0;
 	}
 
 	while(source[source_index] == '.' &&
@@ -263,13 +321,19 @@ void copy_archive_path(char *destination, size_t destination_size, const char *s
 		source_index += 2;
 	}
 
-	while(source[source_index] && destination_index < destination_size - 1) {
+	while(source[source_index]) {
+		if(destination_index >= destination_size - 1) {
+			destination[destination_index] = '\0';
+			return 0;
+		}
+
 		destination[destination_index] = source[source_index] == '/' ? '\\' : source[source_index];
 		source_index++;
 		destination_index++;
 	}
 
 	destination[destination_index] = '\0';
+	return 1;
 }
 
 /*
@@ -289,7 +353,7 @@ void copy_archive_root_from_input_directory(char *destination, size_t destinatio
 	const char *component_end;
 	const char *component_start;
 	size_t component_length;
-	char component[FILE_NAME_MAX_LEN];
+	char component[ARCHIVE_PATH_MAX_LEN];
 
 	if(destination_size == 0) {
 		return;
@@ -334,7 +398,10 @@ void copy_archive_root_from_input_directory(char *destination, size_t destinatio
 
 	memcpy(component, component_start, component_length);
 	component[component_length] = '\0';
-	copy_archive_path(destination, destination_size, component);
+	if(!copy_archive_path(destination, destination_size, component)) {
+		printf("\nError: archive root path too long: %s\n", input_directory);
+		exit(1);
+	}
 }
 
 /*
@@ -421,7 +488,7 @@ int main(int argc, char *argv[]) {
 	pak_entry_node_t *entry_node_free;
 	
 	pak_entry_t    entry;
-	FILE    *pak_file_object;
+	FILE    *pak_file_object = NULL;
 	pak_offset_t table_offset;
 	pak_offset_t table_end_offset;
 	pak_offset_t table_start_offset;
@@ -435,11 +502,12 @@ int main(int argc, char *argv[]) {
 	pak_u32	pack_format_id = 0;
 	size_t	file_count   = 0;
 	int 	fgetc_result = 0;
+	int	exit_status = 0;
 	pak_format_t format = PAK_FORMAT_PAK32;
 
 	unsigned char pack_magic_buffer[PACK_MAGIC_BYTE_COUNT];
 	char	curdir[512];
-	char	archive_root[FILE_NAME_MAX_LEN];
+	char	archive_root[ARCHIVE_PATH_MAX_LEN];
 	char	*input_dir    = NULL;
 	char	*pattern      = NULL;
 	char	*pak_filename;
@@ -605,6 +673,7 @@ int main(int argc, char *argv[]) {
 
 		if(pack_directory(pak_file_object, input_dir, archive_root, format) < 0) {
 			printf("\nError: an error occurred during the directory scanning\n");
+			exit_status = 1;
 			goto quit;
 		}
 
@@ -682,11 +751,13 @@ int main(int argc, char *argv[]) {
 		}
 
 		if(fread(pack_magic_buffer, 1, pack_magic_len, pak_file_object) != pack_magic_len) {
+			exit_status = 1;
 			goto quit;
 		}
 
 		if(memcmp(pack_magic_buffer, pack_magic_bytes, pack_magic_len) != 0) {
 			printf("\nError: unsupported pack format\n");
+			exit_status = 1;
 			goto quit;
 		}
 
@@ -701,6 +772,7 @@ int main(int argc, char *argv[]) {
 			entry_base_size = PAK64_ENTRY_BASE_SIZE;
 		} else {
 			printf("\nError: unsupported PACK format id %u\n", (unsigned int)pack_format_id);
+			exit_status = 1;
 			goto quit;
 		}
 
@@ -719,6 +791,7 @@ int main(int argc, char *argv[]) {
 
 		if(table_offset < header_size || table_offset > table_end_offset) {
 			printf("\nError: malformed %s file table offset\n", format_name(format));
+			exit_status = 1;
 			goto quit;
 		}
 
@@ -731,6 +804,7 @@ int main(int argc, char *argv[]) {
 
 			if(remaining_table_bytes < entry_base_size) {
 				printf("\nError: malformed %s file table\n", format_name(format));
+				exit_status = 1;
 				goto quit;
 			}
 
@@ -746,11 +820,13 @@ int main(int argc, char *argv[]) {
 
 			if(entry.record_size <= entry_base_size) {
 				printf("\nError: malformed %s file table entry\n", format_name(format));
+				exit_status = 1;
 				goto quit;
 			}
 
 			if(entry.record_size > remaining_table_bytes) {
 				printf("\nError: malformed %s file table\n", format_name(format));
+				exit_status = 1;
 				goto quit;
 			}
 
@@ -791,6 +867,7 @@ int main(int argc, char *argv[]) {
 							entry.data_size > table_start_offset - entry.data_offset) {
 							printf("\nError: malformed %s file data range: %s\n", format_name(format), entry.name);
 							free(entry.name);
+							exit_status = 1;
 							goto quit;
 						}
 
@@ -807,11 +884,13 @@ int main(int argc, char *argv[]) {
 	}
 
 quit:
-	fclose(pak_file_object);
+	if(pak_file_object) {
+		fclose(pak_file_object);
+	}
 	printf("- finished: %zu files\n", file_count);
 	printf("- current directory: %s\n", getcwd(curdir, sizeof(curdir)));
 	
-	return 0;
+	return exit_status;
 }
 
 int pack_file(FILE *pak_file_object, const char *source_file_path, const char *archive_file_path, pak_format_t format) {
@@ -827,12 +906,15 @@ int pack_file(FILE *pak_file_object, const char *source_file_path, const char *a
 	pak_u32 record_size;
 
 	unsigned char 	copy_buffer[8192];
-	char archive_name[FILE_NAME_MAX_LEN];
+	char archive_name[ARCHIVE_PATH_MAX_LEN];
 
-	copy_archive_path(archive_name, sizeof(archive_name), archive_file_path);
-	if(!archive_name[0]) {
-		printf("\nError: empty archive path for %s\n", source_file_path);
-		exit(1);
+	if(!copy_archive_path(archive_name, sizeof(archive_name), archive_file_path)) {
+		printf("\nError: archive path too long: %s\n", archive_file_path);
+		return -1;
+	}
+
+	if(!validate_archive_path(archive_name, source_file_path)) {
+		return -1;
 	}
 
 	// printf("  %s\r", archive_name);
@@ -1024,8 +1106,8 @@ void write_le_u64(FILE *pak_file_object, uint64_t value) {
 }
 
 int pack_directory(FILE *pak_file_object, const char *source_directory_path, const char *archive_directory_path, pak_format_t format) {
-	char  child_source_path[FILE_NAME_MAX_LEN];
-	char  child_archive_path[FILE_NAME_MAX_LEN];
+	char  child_source_path[SOURCE_PATH_MAX_LEN];
+	char  child_archive_path[ARCHIVE_PATH_MAX_LEN];
 
 	struct  stat    path_status;
 	struct  dirent  **namelist;
