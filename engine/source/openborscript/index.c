@@ -1235,6 +1235,8 @@ void Script_LoadSystemFunctions()
     List_InsertAfter(&theFunctionList,
                      (void *)math_round, "round");
     List_InsertAfter(&theFunctionList,
+                     (void *)math_abs, "abs");
+    List_InsertAfter(&theFunctionList,
                      (void *)openbor_systemvariant, "openborvariant");
     List_InsertAfter(&theFunctionList,
                      (void *)openbor_setsystemvariant, "changeopenborvariant");

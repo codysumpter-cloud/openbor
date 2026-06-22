@@ -631,3 +631,70 @@ HRESULT math_round(ScriptVariant **varlist , ScriptVariant **pretvar, int paramC
     return E_FAIL;
 }
 
+/*
+* Caskey, Damon V.
+* 2026-06-08
+*
+* Get absolute value of a variant as an integer
+* or decimal. Integer inputs stay in integer
+* space when possible, with promotion to 64-bit
+* or unsigned 64-bit carriers when needed.
+*
+* INT64_MIN is returned as VT_UINTEGER64 because
+* its positive magnitude cannot fit signed 64-bit.
+*
+* abs(-5) = 5
+* abs(5) = 5
+*/
+HRESULT math_abs(ScriptVariant **varlist, ScriptVariant **pretvar, int paramCount)
+{
+    DOUBLE dbltemp;
+    int64_t signed_value;
+    uint64_t magnitude;
+
+    (void)paramCount;
+
+    switch (varlist[0]->vt) {
+        case VT_UINTEGER64:
+            ScriptVariant_Copy(*pretvar, varlist[0]);
+            return S_OK;
+
+        case VT_INTEGER:
+        case VT_INTEGER64:
+            if (ScriptVariant_Integer64Value(varlist[0], &signed_value) != S_OK) {
+                break;
+            }
+
+            if (signed_value >= 0) {
+                ScriptVariant_SetSignedIntegerResult(*pretvar, signed_value, 0);
+                return S_OK;
+            }
+
+            /*
+             * Avoid signed overflow for INT64_MIN.
+             * abs(INT64_MIN) is 9223372036854775808,
+             * which only fits unsigned 64-bit.
+             */
+            magnitude = (uint64_t)(-(signed_value + 1)) + UINT64_C(1);
+
+            if (magnitude <= (uint64_t)INT64_MAX) {
+                ScriptVariant_SetSignedIntegerResult(*pretvar, (int64_t)magnitude, 0);
+            } else {
+                ScriptVariant_SetUnsignedIntegerResult(*pretvar, magnitude, 0);
+            }
+
+            return S_OK;
+
+        default:
+            break;
+    }
+
+    if (ScriptVariant_DecimalValue(varlist[0], &dbltemp) == S_OK) {
+        ScriptVariant_ChangeType(*pretvar, VT_DECIMAL);
+        (*pretvar)->dblVal = (DOUBLE)fabs((double)dbltemp);
+        return S_OK;
+    }
+
+    *pretvar = NULL;
+    return E_FAIL;
+}
