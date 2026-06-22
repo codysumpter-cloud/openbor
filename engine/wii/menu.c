@@ -591,7 +591,7 @@ void drawMenu()
 	int clipX=0, clipY=0;
 
 	copyScreens(Source);
-	if(dListTotal < 1) printText((isWide ? 30 : 8), (isWide ? 33 : 24), RED, 0, 0, "No Mods In Paks Folder!");
+	if(dListTotal < 1) printText((isWide ? 30 : 8), (isWide ? 33 : 24), RED, 0, 0, "No modules In Paks Folder!");
 	for(list=0; list<dListTotal; list++)
 	{
 		if(list < MAX_MODS_NUM)
