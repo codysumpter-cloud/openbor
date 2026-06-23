@@ -173,10 +173,6 @@ void setSystemRam()
     //systemRam = 0x02000000 - 0x002C6000;
     systemRam = 0x01c8c000;//Opendingux
     elfOffset = 0x00000000;
-#elif WII
-    // 88 MBytes with 16 Mbytes reserved for ISO System
-    systemRam = 0x817FFFFF - 0x80000000 + ((64 - 16) * 1024 * 1024);
-    elfOffset = 0x80000000;
 #elif VITA
     systemRam = 0x0f000000;
     elfOffset = 0x00000000;

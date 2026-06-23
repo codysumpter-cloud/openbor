@@ -32,11 +32,6 @@
 #include <sys/stat.h>
 #endif
 
-#if WII
-#include "wiiport.h"
-#include "savepng.h"
-#endif
-
 #if ANDROID
 #include "sdlport.h"
 #include "savepng.h"
@@ -48,14 +43,7 @@
 #define MKDIR(x) mkdir(x, 0777)
 #endif
 
-#ifdef WII
-#define CHECK_LOGFILE(type)  type ? fileExists(getFullPath("Logs/OpenBorLog.txt")) : fileExists(getFullPath("Logs/ScriptLog.txt"))
-#define OPEN_LOGFILE(type)   type ? fopen(getFullPath("Logs/OpenBorLog.txt"), "wt") : fopen(getFullPath("Logs/ScriptLog.txt"), "wt")
-#define APPEND_LOGFILE(type) type ? fopen(getFullPath("Logs/OpenBorLog.txt"), "at") : fopen(getFullPath("Logs/ScriptLog.txt"), "at")
-#define READ_LOGFILE(type)   type ? fopen(getFullPath("Logs/OpenBorLog.txt"), "rt") : fopen(getFullPath("Logs/ScriptLog.txt"), "rt")
-#define COPY_ROOT_PATH(buf, name) strcpy(buf, rootDir); strcat(buf, name); strcat(buf, "/");
-#define COPY_PAKS_PATH(buf, name) strcpy(buf, paksDir); strcat(buf, "/"); strcat(buf, name);
-#elif ANDROID
+#if ANDROID
 //msmalik681 now using AndroidRoot fuction from sdlport.c to update all android paths.
 #define Alog AndroidRoot("Logs/OpenBorLog.txt")
 #define Aslog AndroidRoot("Logs/ScriptLog.txt")
@@ -359,7 +347,7 @@ void screenshot(s_screen *vscreen, unsigned char *pal, int ingame)
     getPakName(modname, 99);
     do
     {
-#if SDL || WII
+#if SDL
         sprintf(shotname, "%s/%s - %04u.png", screenShotsDir, modname, shotnum);
 #else
         sprintf(shotname, "./ScreenShots/%s - %04u.png", modname, shotnum);
