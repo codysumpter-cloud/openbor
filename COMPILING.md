@@ -9,7 +9,6 @@ Within the root of the OpenBOR repository you will find CMakeLists.txt which con
     Linux   (linux.cmake)
     Windows (windows.cmake, windows-finalize.cmake)
     Darwin  (macos.cmake, macos-finalize.cmake)
-    Wii     (wii.cmake)
 
 # Building Target
 Cmake provides various options for building a targets in general, however we are only going to focus on a subset of these options.  Typically running the cmake command without addition parameters is enough for the configuration system to identify which host you are running on in order to build a native target.  A few example are provided below to showcase how to configure and build a OpenBOR target.
@@ -102,7 +101,6 @@ Using the build scripts provided in the repository we can now ensure that all su
             -rw-r--r-- 1 root root 1537 Apr 20 15:13 LICENSE.txt
             drwxr-xr-x 9 root root  288 Apr 21 01:24 LINUX
             -rw-r--r-- 1 root root  314 Apr 20 15:13 README.txt
-            drwxr-xr-x 7 root root  224 Apr 21 01:24 WII
             drwxr-xr-x 8 root root  256 Apr 21 01:24 WINDOWS
             -rw-r--r-- 1 root root 5871 Apr 20 15:13 translation.txt
 
