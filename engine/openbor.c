@@ -2631,13 +2631,7 @@ void clearsettings()
     savedata.debuginfo = 0;
     savedata.fullscreen = 0;
     savedata.fpslimit = 1; // default to vsync
-
-	#if WII
-    savedata.stretch = 1;
-	#else
     savedata.stretch = 0;
-	#endif
-
     savedata.swfilter = 0;
 
     #ifdef SDL
@@ -12109,7 +12103,7 @@ void lcmHandleCommandWeapons(ArgList *arglist, s_model *newchar)
     /*
     * Weapon list arguments left to right, until we
     * reach this model's number of weapons. If none,
-    * populate wiith "none" index. Otherwise we find
+    * populate with "none" index. Otherwise we find
     * a model index to populate with.
     */
 
@@ -31668,7 +31662,7 @@ e_animations do_grab_attack_finish(entity *ent, int which)
     }
 
     // Could not find a valid finisher. Return none.
-    return ATK_NONE;
+    return ANI_NONE;
 }
 
 void common_grab_check()
@@ -46161,9 +46155,9 @@ void update(int ingame, int usevwait)
 // ----------------------------------------------------------------------
 /* Plombo 9/4/2010: New function that can use brightness/gamma correction
  * independent from the global palette on platforms where it's available.
- * Hardware accelerated brightness/gamma correction is available on Wii and
- * OpenGL platforms using TEV and GLSL, respectively. Returns 1 on success, 0 on
- * error. */
+ * Hardware accelerated brightness/gamma correction is available on OpenGL
+ * platforms using GLSL. Returns 1 on success, 0 on error.
+ */
 int set_color_correction(int gm, int br)
 {
     video_set_color_correction(gm, br);
@@ -46315,42 +46309,37 @@ void display_credits()
         font_printf(col1, s + v * m,  0, 0, "Msmalik681");
         font_printf(col2, s + v * m,  0, 0, "Developer"); ++m;
 
-        font_printf(col1, s + v * m,  0, 0, "Plombo");
+        font_printf(col1, s + v * m,  0, 0, "Kratus");
         font_printf(col2, s + v * m,  0, 0, "Developer"); ++m;
 
         font_printf(_strmidx(1, "Former Staff"), s + v * m,  1, 0, "Former Staff"); ++m;
 
         font_printf(col1, s + v * m, 0, 0, "Fightn Words");
-        font_printf(col2, s + v * m,  0, 0, "Fugue"); ++m;
-        font_printf(col1, s + v * m, 0, 0, "KBAndressen");
-        font_printf(col2, s + v * m,  0, 0, "Kirby"); ++m;
-        font_printf(col1, s + v * m,  0, 0, "LordBall");
-        font_printf(col2, s + v * m, 0, 0, "Orochi_X");  ++m;
-        font_printf(col1, s + v * m, 0, 0, "SX");
-        font_printf(col2, s + v * m,  0, 0, "Tails"); ++m;
-        font_printf(col1, s + v * m,  0, 0, "uTunnels");
-		font_printf(col2, s + v * m,  0, 0, "White Dragon"); ++m;
+        font_printf(col2, s + v * m, 0, 0, "Fugue"); ++m;
 
-        font_printf(_strmidx(1, "Ports"), s + v * m,  1, 0, "Ports"); ++m;
-        font_printf(col1, s + v * m, 0, 0, "PSP/Linux/OSX");
+        font_printf(col1, s + v * m, 0, 0, "KBAndressen");
+        font_printf(col2, s + v * m, 0, 0, "Kirby"); ++m;
+
+        font_printf(col1, s + v * m, 0, 0, "LordBall");
+        font_printf(col2, s + v * m, 0, 0, "Orochi_X"); ++m;
+
+        font_printf(col1, s + v * m, 0, 0, "SX");
+        font_printf(col2, s + v * m, 0, 0, "Tails"); ++m;
+
+        font_printf(col1, s + v * m, 0, 0, "uTunnels");
+        font_printf(col2, s + v * m, 0, 0, "White Dragon"); ++m;
+
+        font_printf(col1, s + v * m, 0, 0, "Plombo"); ++m;
+
+        font_printf(_strmidx(1, "Ports"), s + v * m, 1, 0, "Ports"); ++m;
+
+        font_printf(col1, s + v * m, 0, 0, "Linux/OSX");
         font_printf(col2, s + v * m, 0, 0, "SX"); ++m;
-		/*
-        font_printf(col1, s + v * m, 0, 0, "OpenDingux");
-        font_printf(col2, s + v * m, 0, 0, "Shin-NiL"); ++m;
-        
-        font_printf(col1, s + v * m, 0, 0, "DreamCast");
-        font_printf(col2, s + v * m, 0, 0, "Neill Corlett, SX"); ++m;
-		*/
-        font_printf(col1, s + v * m, 0, 0, "Wii");
-        font_printf(col2, s + v * m, 0, 0, "Plombo, SX, Msmalik681"); ++m;
 
         font_printf(col1, s + v * m, 0, 0, "Android");
         font_printf(col2, s + v * m, 0, 0, "CRxTRDude, Plombo,"); ++m;
         font_printf(col2, s + v * m, 0, 0, "uTunnels, Msmalik681"); ++m;
         font_printf(col2, s + v * m, 0, 0, "White Dragon"); ++m;
-
-        font_printf(col1,  s + v * m, 0, 0, "PS Vita");
-        font_printf(col2, s + v * m, 0, 0, "Plombo"); ++m;
 
         update(2, 0);
 
@@ -48835,16 +48824,6 @@ void init_videomodes(int log)
 #define tryfile(X) if((tmp=openpackfile(X,packfile))!=-1) { closepackfile(tmp); filename=X; goto readfile; }
 #if WIN || LINUX
     tryfile("data/videopc.txt");
-#elif WII
-    tryfile("data/videowii.txt");
-    if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-    {
-        tryfile("data/video169.txt")
-    }
-    else
-    {
-        tryfile("data/video43.txt");
-    }
 #endif
 #undef tryfile
 
@@ -48935,7 +48914,7 @@ VIDEOMODES:
     videomodes.filter  = savedata.swfilter;
     switch (videoMode)
     {
-        // 320x240 - All Platforms
+        // 320x240 - QVGA
     case 0:
         videomodes.hRes    = 320;
         videomodes.vRes    = 240;
@@ -48949,7 +48928,7 @@ VIDEOMODES:
         BGHEIGHT           = 160;
         break;
 
-        // 480x272 - All Platforms
+        // 480x272 - WQVGA
     case 1:
         videomodes.hRes    = 480;
         videomodes.vRes    = 272;
@@ -48963,7 +48942,7 @@ VIDEOMODES:
         BGHEIGHT           = 182;
         break;
 
-        // 640x480 - PC, Dreamcast, Wii
+        // 640x480 - VGA
     case 2:
         videomodes.hRes    = 640;
         videomodes.vRes    = 480;
@@ -48977,7 +48956,7 @@ VIDEOMODES:
         BGHEIGHT           = 321;
         break;
 
-        // 720x480 - PC, Wii
+        // 720x480 - DVD
     case 3:
         videomodes.hRes    = 720;
         videomodes.vRes    = 480;
@@ -48991,7 +48970,7 @@ VIDEOMODES:
         BGHEIGHT           = 321;
         break;
 
-        // 800x480 - PC, Wii, Pandora
+        // 800x480 - WVGA
     case 4:
         videomodes.hRes    = 800;
         videomodes.vRes    = 480;
@@ -49005,7 +48984,7 @@ VIDEOMODES:
         BGHEIGHT           = 321;
         break;
 
-        // 800x600 - PC, Dreamcast, Wii
+        // 800x600 - SVGA
     case 5:
         videomodes.hRes    = 800;
         videomodes.vRes    = 600;
@@ -49019,7 +48998,7 @@ VIDEOMODES:
         BGHEIGHT           = 401;
         break;
 
-        // 960x540 - PC, Wii
+        // 960x540 - qHD
     case 6:
         videomodes.hRes    = 960;
         videomodes.vRes    = 540;
@@ -49033,6 +49012,7 @@ VIDEOMODES:
         BGHEIGHT           = 362;
         break;
 
+        // Custom video mode
     case 255:
         videomodes.dOffset = videomodes.vRes * 0.9625;
         printf("\nUsing debug video mode: %d x %d\n", videomodes.hRes, videomodes.vRes);
@@ -49086,8 +49066,6 @@ void safe_set(int *arr, int index, int newkey, int oldkey)
 
 void keyboard_setup(int player)
 {
-    const int btnnum = MAX_BTN_NUM;
-
     int quit = 0; 
     int sdid = 0;
     int selector = 0;
@@ -49106,13 +49084,13 @@ void keyboard_setup(int player)
     char* command;
     char* filename = "translation/menu.txt";
     
-    char  buttonnames[btnnum][32];
+    char  buttonnames[MAX_BTN_NUM][32];
     
     size_t size;
     ArgList arglist;
     
     char argbuf[MAX_ARG_LEN + 1] = "";
-    int OPTIONS_NUM = btnnum + 3;
+    int OPTIONS_NUM = MAX_BTN_NUM + 3;
 
     screen_status |= IN_SCREEN_BUTTON_CONFIG_MENU;
 
@@ -49206,13 +49184,13 @@ proceed:
 
 finish:
 
-    while(disabledkey[selector]) if(++selector > btnnum - 1) break;
+    while(disabledkey[selector]) if(++selector > MAX_BTN_NUM - 1) break;
 
     while(!quit)
     {
         voffset = -6;
         _menutextm(2, -8, 0, Tr("Player %i"), player + 1);
-        for(i = 0; i < btnnum; i++)
+        for(i = 0; i < MAX_BTN_NUM; i++)
         {
             if(!disabledkey[i])
             {
@@ -49273,14 +49251,14 @@ finish:
                         break;
                     }
                 }
-                while(selector < btnnum && disabledkey[selector]);
+                while(selector < MAX_BTN_NUM && disabledkey[selector]);
                 sound_play_sample(global_sample_list.beep, 0, savedata.effectvol, savedata.effectvol, 100);
             }
             if(bothnewkeys & FLAG_MOVEDOWN)
             {
                 do
                 {
-                    if(++selector > btnnum - 1) break;
+                    if(++selector > MAX_BTN_NUM - 1) break;
                 }
                 while(disabledkey[selector]);
                 sound_play_sample(global_sample_list.beep, 0, savedata.effectvol, savedata.effectvol, 100);
@@ -49292,7 +49270,7 @@ finish:
             if(selector > OPTIONS_NUM)
             {
                 selector = 0;
-                while(disabledkey[selector]) if(++selector > btnnum - 1) break;
+                while(disabledkey[selector]) if(++selector > MAX_BTN_NUM - 1) break;
             }
 
             if(bothnewkeys & (FLAG_MOVELEFT | FLAG_MOVERIGHT | FLAG_ANYBUTTON))
@@ -49367,17 +49345,6 @@ void menu_options_input()
     while(!quit)
     {
         _menutextm(2, x_pos-1, 0, Tr("Control Options"));
-                
-        #if WII
-        if(savedata.usejoy)
-        {
-            _menutext((selector == 0), -4, -2, Tr("Nunchuk Analog Enabled"));
-        }
-        else
-        {
-            _menutext((selector == 0), -4, -2, Tr("Nunchuk Analog Disabled"));
-        }
-        #else
         if(savedata.usejoy)
         {
             _menutext((selector == 0), x_pos, -2, Tr("GamePads Enabled"));
@@ -49390,8 +49357,6 @@ void menu_options_input()
         {
             _menutext((selector == 0), x_pos, -2, Tr("GamePads Disabled"));
         }
-        #endif
-
         _menutext((selector == 1), x_pos,-1, Tr("Setup Player 1..."));
         _menutext((selector == 2), x_pos, 0, Tr("Setup Player 2..."));
         _menutext((selector == 3), x_pos, 1, Tr("Setup Player 3..."));
@@ -50372,20 +50337,6 @@ void menu_options_video()
         _menutext((selector == 2), col1, -1, Tr("Window Offset:"));
         _menutext((selector == 2), col2, -1, "%i", savedata.windowpos);
 
-#if WII
-        _menutext((selector == 3), col1, 0, Tr("Display Mode:"));
-        _menutext((selector == 3), col2, 0, (savedata.stretch ? Tr("Stretch to Screen") : Tr("Preserve Aspect Ratio")));
-        _menutextm((selector == 4), 6, 0, Tr("Back"));
-        if(selector < 0)
-        {
-            selector = 4;
-        }
-        if(selector > 4)
-        {
-            selector = 0;
-        }
-#endif
-
 #if SDL
         _menutext((selector == 3), col1, 0, Tr("Display Mode:"));
         _menutext((selector == 3), col2, 0, savedata.fullscreen ? Tr("Full") : Tr("Window"));
@@ -50547,12 +50498,7 @@ void menu_options_video()
                     savedata.windowpos = 20;
                 }
                 break;
-#if WII
-            case 3:
-                //video_fullscreen_flip();
-                video_stretch((savedata.stretch ^= 1));
-                break;
-#elif SDL
+#if SDL
             case 3:
                 video_fullscreen_flip();
                 break;

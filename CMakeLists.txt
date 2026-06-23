@@ -6,7 +6,6 @@ project(OpenBOR VERSION 4.0 LANGUAGES C)
 option(BUILD_WIN    "Windows" OFF)
 option(BUILD_LINUX  "Linux" OFF)
 option(BUILD_DARWIN "MacOS" OFF)
-option(BUILD_WII    "Nintendo Wii Console" OFF)
 
 # Backends
 option(TARGET_ARCH "[X86,AMD64,ARM64,UNIVERSAL]" OFF)
@@ -73,7 +72,7 @@ add_executable(${PROJECT_NAME} ${SRC_FILES})
 add_dependencies(${PROJECT_NAME} VersionInfo)
 
 # Auto-Detect
-if(NOT (BUILD_WIN OR BUILD_LINUX OR BUILD_DARWIN OR BUILD_WII))
+if(NOT (BUILD_WIN OR BUILD_LINUX OR BUILD_DARWIN))
   if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(BUILD_DARWIN ON)
     message("Build target not specified, BUILD_DARWIN=ON")
@@ -96,8 +95,6 @@ elseif(BUILD_DARWIN)
   include("cmake/macos.cmake")
 elseif(BUILD_LINUX)
   include("cmake/linux.cmake")
-elseif(BUILD_WII)
-  include("cmake/wii.cmake")
 endif()
 
 # Include Optional Source Files

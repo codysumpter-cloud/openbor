@@ -140,6 +140,7 @@ HRESULT math_ceil(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCo
 HRESULT math_floor(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);
 HRESULT math_trunc(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);
 HRESULT math_round(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);
+HRESULT math_abs(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);
 
 HRESULT openbor_systemvariant(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);
 HRESULT openbor_setsystemvariant(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount);

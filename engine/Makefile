@@ -165,24 +165,6 @@ BUILD_DEBUG     = 1
 endif
 endif
 
-ifdef BUILD_WII
-TARGET 	        = $(VERSION_NAME).elf
-TARGET_MAP      = $(TARGET).map
-TARGET_FINAL    = boot.dol
-TARGET_PLATFORM = WII
-BUILD_TREMOR    = 1
-BUILD_WEBM      = 1
-BUILD_ELM       = 1
-BUILDING        = 1
-INCLUDES        = $(DEVKITPRO)/portlibs/ppc/include \
-                  $(DEVKITPRO)/libogc/include
-LIBRARIES       = $(DEVKITPRO)/portlibs/ppc/lib \
-                  $(DEVKITPRO)/libogc/lib/wii
-ifeq ($(BUILD_WII), 0)
-BUILD_DEBUG     = 1
-endif
-endif
-
 STRIP           = cp $(TARGET) $(TARGET_FINAL)
 ifndef BUILD_DEBUG
 ifndef NO_STRIP
@@ -195,9 +177,6 @@ endif
 ifdef BUILD_DARWIN
 STRIP           = $(PREFIX)strip $(TARGET) -o $(TARGET_FINAL)
 endif
-ifdef BUILD_WII
-ELF2DOL         = elf2dol $< $@
-endif
 endif
 endif
 
@@ -205,10 +184,6 @@ endif
 #----------------------------------------------------------------------------------------------------
 # Directories
 #----------------------------------------------------------------------------------------------------
-
-ifdef BUILD_WII
-INCS           += wii
-endif
 
 ifdef BUILD_SDL
 INCS           += sdl
@@ -350,17 +325,6 @@ GAME_CONSOLE    = psp/control/control.o                                         
                   psp/pspport.o
 endif
 
-
-ifdef BUILD_WII
-GAME_CONSOLE    = wii/control.o                                                                     \
-                  wii/sblaster.o                                                                    \
-                  wii/timer.o                                                                       \
-                  wii/video.o                                                                       \
-                  wii/threads.o                                                                     \
-                  wii/menu.o                                                                        \
-                  wii/wiiport.o
-endif
-
 ifdef BUILD_VITA
 GAME_CONSOLE    = vita/control.o                                                                     \
                   vita/sblaster.o                                                                    \
@@ -474,14 +438,6 @@ ifdef BUILD_PANDORA
 CFLAGS         += -DLINUX
 endif
 
-
-ifdef BUILD_WII
-CFLAGS 	       += -DCACHE_BACKGROUNDS -DREVERSE_COLOR -D__ppc__ $(MACHDEP) -Wl,-Map,$(TARGET_MAP),-wrap,wiiuse_register
-# This allows to compile with DevkitPPC r29 and above.
-CFLAGS 	       += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
-endif
-
-
 ifdef BUILD_VITA
 CFLAGS 	       += -DCACHE_BACKGROUNDS -Wl,-q
 endif
@@ -578,12 +534,6 @@ ifdef BUILD_PTHREAD
 LIBS           += -lpthread
 endif
 
-
-ifdef BUILD_WII
-LIBS           += -lwupc -lwiiuse -lbte -lfat -lasnd -logc
-endif
-
-
 ifdef BUILD_VITA
 LIBS           += -lvita2d -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
 	              -lSceSysmodule_stub -lSceCtrl_stub -lScePgf_stub \
@@ -665,30 +615,6 @@ $(TARGET_FINAL) : $(TARGET)
 endif
 
 #----------------------------------------------------------------------------------------------------
-# Rules to manage Files and Libraries for Wii
-#----------------------------------------------------------------------------------------------------
-
-ifdef BUILD_WII
-SOURCES = $(INCS)
-include $(DEVKITPPC)/wii_rules
-all : $(TARGET) $(TARGET_FINAL)
-	@echo
-%.o : %.c
-	@echo Compiling $(TARGET_PLATFORM) Port: $<...
-	@$(CC) $(CFLAGS) -c $< -o $@
-$(TARGET) : $(OBJS) $(RES)
-	@echo
-	@echo Linking $(TARGET_PLATFORM) Port: $(TARGET)...
-	@$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(TARGET_RESOURCE) $(LIBS)
-$(TARGET_FINAL) : $(TARGET)
-	@echo Stripping $(TARGET_PLATFORM) Port: $(TARGET_FINAL)...
-	@$(ELF2DOL)
-	@echo
-	@echo Completed $(TARGET_PLATFORM) Port!
-	@echo $(TARGET_FINAL) is now ready!
-endif
-
-#----------------------------------------------------------------------------------------------------
 # Rules to manage Files and Libraries for Vita
 #----------------------------------------------------------------------------------------------------
 
@@ -727,7 +653,6 @@ all:
 	@echo
 	@echo make BUILD_PSP=1
 	@echo make BUILD_PS2=1
-	@echo make BUILD_WII=1
 	@echo make BUILD_WIN=1
 	@echo make BUILD_PANDORA=1
 	@echo make BUILD_LINUX=1
