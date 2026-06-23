@@ -50,11 +50,7 @@ if test -e "releases/WINDOWS/OpenBOR/OpenBOR.exe"; then
     echo "Windows Platform Failed To Build!"
     exit 1
   fi
-  if ! test -e "releases/WII/OpenBOR/boot.dol"; then
-    echo "Wii Platform Failed To Build!"
-    exit 1
-  fi
-  
+    
   if test -e "releases/LINUX/OpenBOR/OpenBOR"; then
     cd ../tools/borpak/source/
     . build.sh lin
@@ -174,30 +170,6 @@ function windows {
   fi
 }
 
-# Wii Environment && Compile
-function wii {
-  export PATH=$OLD_PATH
-  . ./environ.sh 7
-  if test $DEVKITPPC; then
-    make clean BUILD_WII=1
-    make BUILD_WII=1
-    if test -f "./boot.dol"; then
-      if test ! -e "./releases/WII" ; then
-        mkdir ./releases/WII
-        mkdir ./releases/WII/OpenBOR
-        mkdir ./releases/WII/OpenBOR/Logs
-        mkdir ./releases/WII/OpenBOR/Paks
-        mkdir ./releases/WII/OpenBOR/Saves
-        mkdir ./releases/WII/OpenBOR/ScreenShots
-      fi
-      mv boot.dol ./releases/WII/OpenBOR/
-      cp ./resources/meta.xml ./releases/WII/OpenBOR
-      cp ./resources/OpenBOR_Icon_128x48.png ./releases/WII/OpenBOR/icon.png
-    fi
-    make clean BUILD_WII=1
-  fi
-}
-
 # Darwin Environment && Compile
 function darwin {
   export PATH=$OLD_PATH
@@ -249,7 +221,6 @@ function build_all {
     linux_x86
     linux_amd64
     windows
-    wii
     darwin
 	android
   fi
@@ -263,7 +234,6 @@ function print_help {
   echo "    0 = Distribute"
   echo "    4 = Linux (x86, amd64) Example: $0 4 amd64"
   echo "    5 = Windows"
-  echo "    7 = Wii"
   echo "  all = build for all applicable targets"
   echo "-------------------------------------------------------"
   echo "Example: $0 10"
@@ -284,11 +254,6 @@ case $1 in
   5)
     version
     windows
-    ;;
-
-  7)
-    version
-    wii
     ;;
 
   ?)

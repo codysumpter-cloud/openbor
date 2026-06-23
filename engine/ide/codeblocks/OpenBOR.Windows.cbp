@@ -692,33 +692,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../vita/vitaport.h" />
-		<Unit filename="../wii/control.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/control.h" />
-		<Unit filename="../wii/hankaku.h" />
-		<Unit filename="../wii/menu.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/menu.h" />
-		<Unit filename="../wii/sblaster.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/sblaster.h" />
-		<Unit filename="../wii/threads.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/timer.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/video.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/video.h" />
-		<Unit filename="../wii/wiiport.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../wii/wiiport.h" />
 		<Unit filename="../xbox/common/include/png.h" />
 		<Unit filename="../xbox/common/include/pngconf.h" />
 		<Unit filename="../xbox/common/include/xbapp.h" />

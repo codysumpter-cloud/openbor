@@ -1,7 +1,6 @@
 FROM --platform=linux/x86_64 mcr.microsoft.com/devcontainers/base:debian
 
 ENV WORKSPACE=/workspace
-ENV DEVKITPRO=/opt/devkitpro
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     dpkg --add-architecture i386 && \
@@ -31,10 +30,6 @@ RUN curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-SDL2-2.30.2-
     curl -L https://mirror.msys2.org/mingw/mingw32/mingw-w64-i686-libogg-1.3.5-1-any.pkg.tar.zst | tar --use-compress-program=unzstd -xv -C /opt && \
     curl -L https://mirror.msys2.org/mingw/mingw32/mingw-w64-i686-libpng-1.6.43-1-any.pkg.tar.zst | tar --use-compress-program=unzstd -xv -C /opt && \
     curl -L https://mirror.msys2.org/mingw/mingw32/mingw-w64-i686-libvpx-1.14.0-1-any.pkg.tar.zst | tar --use-compress-program=unzstd -xv -C /opt
-
-# DevkitPRO
-COPY installDevkitPro.sh .
-RUN ./installDevkitPro.sh
 
 # Base Directories
 RUN mkdir -p "${WORKSPACE}" && chmod -R 777 "$WORKSPACE"
