@@ -131,14 +131,6 @@ void setSystemRam()
     struct sysinfo info;
     sysinfo(&info);
     systemRam = ((u64)info.totalram) * info.mem_unit;
-#elif DC
-    // 16 MBytes - Memory Map:
-    systemRam = 0x8d000000 - 0x8c000000;
-    elfOffset = 0x8c000000;
-#elif (WIZ)
-    // 42 MBytes - Memory Map:
-    systemRam = 0x029fffff - 0x0000a2e0;
-    elfOffset = 0x0000a2e0;
 #else
     elfOffset = 0x00000000;
     stackSize = 0x00000000;

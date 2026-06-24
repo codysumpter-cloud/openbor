@@ -143,47 +143,6 @@ case $1 in
        echo "-------------------------------------------------------"
    fi
    ;;
-   
-############################################################################
-#                                                                          #
-#                             WIZ Environment                              #
-#                                                                          #
-############################################################################
-9)
-   if test -e "/opt/openwiz/toolchain/arm-openwiz-linux-gnu"; then
-     export WIZDEV=/opt/openwiz/toolchain/arm-openwiz-linux-gnu/bin
-     export SDKPATH=/opt/openwiz/toolchain/arm-openwiz-linux-gnu
-     export PREFIX=arm-openwiz-linux-gnu-
-     export PATH=$PATH:$WIZDEV
-   elif [ `echo $HOST_PLATFORM | grep -E "windows|CYGWIN"` ]; then
-     if [ ! -d "../tools/wiz-sdk/tools" ]; then
-       echo "-------------------------------------------------------"
-       echo "         WIZ SDK - Not Found, Installing SDK!"
-       echo "-------------------------------------------------------"
-       ../tools/7-Zip/7za.exe x -y ../tools/wiz-sdk/wiz-sdk.7z -o../tools/wiz-sdk/
-       echo
-       echo "-------------------------------------------------------"
-       echo "         WIZ SDK - Installation Has Completed!"
-       echo "-------------------------------------------------------"
-     fi
-     export WIZDEV=../tools/wiz-sdk/tools/gcc-4.0.2-glibc-2.3.6/arm-linux/bin
-     export SDKPATH=../tools/wiz-sdk/DGE
-     export PREFIX=arm-linux-
-     export EXTENSION=.exe
-     export PATH=$TOOLS:$WIZDEV
-     HOST_PLATFORM="SVN"
-   fi
-   if test $WIZDEV; then
-     echo "-------------------------------------------------------"
-     echo "        WIZ SDK ($HOST_PLATFORM) Environment Loaded!"
-     echo "-------------------------------------------------------"
-   else
-     echo "-------------------------------------------------------"
-     echo "            ERROR - WIZ Environment Failed"
-     echo "                    SDK Installed?"
-     echo "-------------------------------------------------------"
-   fi
-   ;;
 
 ############################################################################
 #                                                                          #
@@ -227,7 +186,6 @@ case $1 in
    echo "   2 = (Not Used)"
    echo "   4 = Linux"
    echo "   5 = Windows"
-   echo "   9 = Wiz"
    echo "  10 = Darwin"
    echo "-------------------------------------------------------"
    echo
