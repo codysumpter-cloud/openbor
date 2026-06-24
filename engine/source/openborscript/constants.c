@@ -1358,7 +1358,6 @@ int mapstrings_transconst(ScriptVariant **varlist, int paramCount)
         /* Ports */
         ICMPCONST(PORTING_ANDROID)
         ICMPCONST(PORTING_DARWIN)
-        ICMPCONST(PORTING_DREAMCAST)
         ICMPCONST(PORTING_GPX2)
         ICMPCONST(PORTING_LINUX)
         ICMPCONST(PORTING_OPENDINGUX)

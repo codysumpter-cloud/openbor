@@ -9166,8 +9166,6 @@ int getsyspropertybyindex(ScriptVariant *var, int index)
                 porting = PORTING_ANDROID;
         #elif DARWIN
                 porting = PORTING_DARWIN;
-        #elif DC
-                porting = PORTING_DREAMCAST;
         #elif GPX2
                 porting = PORTING_GPX2;
         #elif LINUX

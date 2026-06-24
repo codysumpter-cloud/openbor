@@ -269,43 +269,6 @@ case $1 in
 
 ############################################################################
 #                                                                          #
-#                           Dreamcast Environment                          #
-#                                                                          #
-############################################################################
-6)
-   if test -e "/usr/local/dcdev/kos"; then
-     . /usr/local/dcdev/kos/environ.sh
-   elif test -e "/opt/dcdev/kos"; then
-     . /opt/dcdev/kos/environ.sh
-   elif [ `echo $HOST_PLATFORM | grep -E "windows|CYGWIN"` ]; then
-     if [ ! -d "../tools/dc-sdk/kos" ]; then
-        echo "-------------------------------------------------------"
-        echo "     Dreamcast SDK - Not Found, Installing SDK!"
-        echo "-------------------------------------------------------"
-        ../tools/7-Zip/7za.exe x -y ../tools/dc-sdk/kos-svn-698.7z -o../tools/dc-sdk/
-        echo
-        echo "-------------------------------------------------------"
-        echo "     Dreamcast SDK - Installation Has Completed!"
-        echo "-------------------------------------------------------"
-     fi
-     HOST_PLATFORM="SVN";
-     export PATH=$TOOLS
-     . ../tools/dc-sdk/kos/environ.sh     
-   fi
-   if test $KOS_BASE; then
-     echo "-------------------------------------------------------"
-     echo "          Dreamcast SDK ($HOST_PLATFORM) Environment Loaded!"
-     echo "-------------------------------------------------------"
-   else
-     echo "-------------------------------------------------------"
-     echo "         ERROR - Dreamcast Environment Failed"
-     echo "                   SDK Installed?"
-     echo "-------------------------------------------------------"
-   fi
-   ;;
-
-############################################################################
-#                                                                          #
 #                          OpenDingux Environment                          #
 #                                                                          #
 ############################################################################
@@ -412,7 +375,6 @@ case $1 in
    echo "   3 = Gp2x"
    echo "   4 = Linux"
    echo "   5 = Windows"
-   echo "   6 = Dreamcast"
    echo "   8 = OpenDingux"
    echo "   9 = Wiz"
    echo "  10 = Darwin"
