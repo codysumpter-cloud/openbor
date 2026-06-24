@@ -8,10 +8,18 @@
 
 /*
  * This library is used for calculating how much memory is available/used.
- * Certain platforms offer physical memory statistics, we obviously wrap
- * around those functions.  For platforms where we can't retrieve this
- * information we then calculate the estimated sizes based on a few key
- * variables and symbols.  These estimated values should tolerable.......
+ * Certain platforms offer physical memory statistics, so we wrap around
+ * those functions. For platforms where we can't retrieve this information,
+ * we estimate sizes based on a few key variables and symbols. These estimated
+ * values should be tolerable for general use.
+ *
+ * 2026-06-24 - Removing legacy console and static device support. This
+ * includes removing fixed physical memory branches for each respective port.
+ * Supported platforms use host platform APIs or the generic estimate path.
+ * Future cleanup can modernize these functions and fully remove the system
+ * RAM fallback tree.
+ *
+ * Linux RAM info also looks suspicious and needs further investigation. 
  */
 
 /////////////////////////////////////////////////////////////////////////////
@@ -30,8 +38,6 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 #include <features.h>
-#elif GP2X
-#include "gp2xport.h"
 #elif OPENDINGUX
 #include <stdlib.h>
 #endif
@@ -146,14 +152,6 @@ void setSystemRam()
     // 16 MBytes - Memory Map:
     systemRam = 0x8d000000 - 0x8c000000;
     elfOffset = 0x8c000000;
-#elif (GP2X && !WIZ)
-    // 32 MBytes - Memory Map:
-    systemRam = 0x02000000 - 0x00000000;
-    elfOffset = 0x00000000;
-    if (gp2x_init() == 2)
-    {
-        systemRam += 32 * 1024 * 1024;
-    }
 #elif (WIZ)
     // 42 MBytes - Memory Map:
     systemRam = 0x029fffff - 0x0000a2e0;

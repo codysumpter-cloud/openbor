@@ -50,56 +50,6 @@ case $1 in
 
 ############################################################################
 #                                                                          #
-#                            GP2X Environment                              #
-#                                                                          #
-############################################################################
-3)
-   if test -e "c:/Cygwin/opt/open2x/gcc-4.1.1-glibc-2.3.6/bin/arm-open2x-linux-gcc.exe"; then
-     export GP2XDEV=c:/Cygwin/opt/open2x/gcc-4.1.1-glibc-2.3.6/bin
-     export SDKPATH=c:/Cygwin/opt/open2x/gcc-4.1.1-glibc-2.3.6
-     export PATH=$PATH:$GP2XDEV
-   elif test -e "/opt/open2x/gcc-4.1.1-glibc-2.3.6/bin/arm-open2x-linux-gcc"; then
-     export GP2XDEV=/opt/open2x/gcc-4.1.1-glibc-2.3.6/bin
-     export SDKPATH=/opt/open2x/gcc-4.1.1-glibc-2.3.6
-     export PATH=$PATH:$GP2XDEV
-   elif test -e "c:/Cygwin/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux/bin/arm-open2x-linux-gcc.exe"; then
-     export GP2XDEV=/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux/bin
-     export SDKPATH=/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux
-     export PATH=$PATH:$GP2XDEV
-   elif test -e "/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux/bin/arm-open2x-linux-gcc"; then
-     export GP2XDEV=/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux/bin
-     export SDKPATH=/opt/open2x/gcc-4.1.1-glibc-2.3.6/arm-open2x-linux
-     export PATH=$PATH:$GP2XDEV
-   elif [ `echo $HOST_PLATFORM | grep -E "windows|CYGWIN"` ]; then
-     if [ ! -d "../tools/gp2x-sdk/bin" ]; then
-       echo "-------------------------------------------------------"
-       echo "         GP2X SDK - Not Found, Installing SDK!"
-       echo "-------------------------------------------------------"
-       ../tools/7-Zip/7za.exe x -y ../tools/gp2x-sdk/gp2x-sdk.7z -o../tools/gp2x-sdk/
-       echo
-       echo "-------------------------------------------------------"
-       echo "         GP2X SDK - Installation Has Completed!"
-       echo "-------------------------------------------------------"
-     fi
-     export GP2XDEV=../tools/gp2x-sdk/bin
-     export SDKPATH=../tools/gp2x-sdk/arm-open2x-linux
-     export PATH=$TOOLS:$GP2XDEV
-     HOST_PLATFORM="SVN"
-   fi
-   if test $GP2XDEV; then
-     echo "-------------------------------------------------------"
-     echo "           GP2X SDK ($HOST_PLATFORM) Environment Loaded!"
-     echo "-------------------------------------------------------"
-   else
-     echo "-------------------------------------------------------"
-     echo "            ERROR - GP2X Environment Failed"
-     echo "                   SDK Installed?"
-     echo "-------------------------------------------------------"
-   fi
-   ;;
-
-############################################################################
-#                                                                          #
 #                           Linux Environment                              #
 #                                                                          #
 ############################################################################
@@ -316,8 +266,7 @@ case $1 in
 *)
    echo
    echo "-------------------------------------------------------"
-   echo "   2 = (Not Used)"   
-   echo "   3 = Gp2x"
+   echo "   2 = (Not Used)"
    echo "   4 = Linux"
    echo "   5 = Windows"
    echo "   8 = OpenDingux"
