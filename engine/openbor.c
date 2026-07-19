@@ -72,7 +72,13 @@ List *modelstxtcmdlist = NULL;
 List *levelcmdlist = NULL;
 List *levelordercmdlist = NULL;
 
-int atkchoices[MAX_ANIS]; //tempory values for ai functions, should be well enough LOL
+/*
+* Temporary attack choices assembled by AI routines.
+* Capacity follows the configured animation table instead
+* of assuming the compile-time MAX_ANIS default is enough.
+*/
+static int* ai_attack_choices = NULL;
+static size_t ai_attack_choice_capacity = 0;
 
 //see types.h
 const s_drawmethod plainmethod =
@@ -822,8 +828,8 @@ int                 ent_count			= 0;					// log count of entites
 int                 ent_max				= 0;
 
 s_player            player[MAX_PLAYERS];
-uint64_t  bothkeys;
-uint64_t  bothnewkeys;
+key_mask_t  bothkeys;
+key_mask_t  bothnewkeys;
 
 s_playercontrols    playercontrols1;
 s_playercontrols    playercontrols2;
@@ -3290,19 +3296,28 @@ static bool command_token_equals(const s_command_token* token, const char* expec
 }
 
 /*
-* Convert a complete command token to an integer.
+* Caskey, Damon V.
+* 2026-07-16
 *
-* Return true when the token contains only an optional
-* sign followed by decimal digits and the result fits
-* in an int. Return false otherwise.
+* Convert a complete command token to a signed
+* 64-bit integer.
+*
+* Return true when the token contains only an
+* optional sign followed by decimal digits and
+* the result fits within the int64_t range.
+*
+* Return false when the token is empty, malformed,
+* or outside the int64_t range.
 */
-static bool command_token_get_int(const s_command_token* token, int64_t* result) {
+static bool command_token_get_int64(const s_command_token* token, int64_t* result) {
     size_t index = 0;
 
     bool negative = false;
 
     uint64_t magnitude = 0;
     uint64_t magnitude_limit;
+
+    const uint64_t negative_limit = (uint64_t)INT64_MAX + UINT64_C(1);
 
     assert(token);
     assert(result);
@@ -3311,17 +3326,30 @@ static bool command_token_get_int(const s_command_token* token, int64_t* result)
         return false;
     }
 
+    /*
+    * Read an optional leading sign.
+    */
     if(token->text[index] == '+'
         || token->text[index] == '-') {
         negative = token->text[index] == '-';
         index++;
 
+        /*
+        * A sign by itself is not an integer.
+        */
         if(index >= token->length) {
             return false;
         }
     }
 
-    magnitude_limit = negative ? (uint64_t)INT_MAX + 1u : (uint64_t)INT_MAX;
+    /*
+    * INT64_MIN has a magnitude one greater than
+    * INT64_MAX, so negative values receive the
+    * larger magnitude limit.
+    */
+    magnitude_limit = negative
+        ? negative_limit
+        : (uint64_t)INT64_MAX;
 
     for(; index < token->length; index++) {
         const unsigned char character =
@@ -3335,91 +3363,207 @@ static bool command_token_get_int(const s_command_token* token, int64_t* result)
 
         digit = (uint64_t)(character - '0');
 
-        if(magnitude > (magnitude_limit - digit) / 10u) {
+        /*
+        * Test before multiplying so malformed input
+        * cannot overflow the unsigned accumulator.
+        */
+        if(magnitude > (magnitude_limit - digit) / UINT64_C(10)) {
             return false;
         }
 
-        magnitude = magnitude * 10u + digit;
+        magnitude =
+            magnitude * UINT64_C(10) + digit;
     }
 
     if(negative) {
-        if(magnitude == (uint64_t)INT_MAX + 1u) {
-            *result = INT_MIN;
+        /*
+        * INT64_MIN cannot be produced by negating
+        * INT64_MAX + 1 as a signed value, so handle
+        * that exact magnitude directly.
+        */
+        if(magnitude == negative_limit) {
+            *result = INT64_MIN;
         } else {
-            *result = -(int)magnitude;
+            *result = -(int64_t)magnitude;
         }
     } else {
-        *result = (int)magnitude;
+        *result = (int64_t)magnitude;
     }
 
     return true;
 }
 
 /*
-* Read a positive integer suffix from a token with
-* the supplied case-insensitive prefix.
+* Caskey, Damon V.
+* 2026-07-17
 *
-* Examples:
+* Convert a complete command token to an unsigned
+* 64-bit integer.
 *
-* freespecial  -> 1
-* freespecial1 -> 1
-* freespecial3 -> 3
-*
-* Return true when the complete token matches the
-* expected numbered-name format. Return false
-* otherwise.
+* Hold durations accept decimal digits only. Testing
+* before multiplication prevents the accumulator from
+* overflowing when a malformed value is too large.
 */
-static bool command_token_get_numbered_suffix(const s_command_token* token, const char* prefix, int64_t* result) {
-    
-    const size_t prefix_length = strlen(prefix);
+static bool command_token_get_uint64(const s_command_token* token, uint64_t* result) {
+    size_t index;
+
+    uint64_t value = 0;
+
+    assert(token);
+    assert(result);
+
+    if(!token->text || token->length == 0) {
+        return false;
+    }
+
+    for(index = 0; index < token->length; index++) {
+        const unsigned char character =
+            (unsigned char)token->text[index];
+
+        uint64_t digit;
+
+        if(character < '0' || character > '9') {
+            return false;
+        }
+
+        digit = (uint64_t)(character - '0');
+
+        if(value > (UINT64_MAX - digit) / UINT64_C(10)) {
+            return false;
+        }
+
+        value = value * UINT64_C(10) + digit;
+    }
+
+    *result = value;
+
+    return true;
+}
+
+/*
+* Read the next command token and convert it to an
+* integer.
+*
+* Return true when the next token is a complete,
+* valid integer. Return false when the token is
+* missing or is not an integer.
+*/
+static bool command_token_reader_next_int64(s_command_token_reader* reader, int64_t* result) {
+    s_command_token token;
+
+    assert(reader);
+    assert(result);
+
+    if(!command_token_reader_next(reader, &token)) {
+        return false;
+    }
+
+    return command_token_get_int64(&token, result);
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-18
+*
+* Parse and validate a numbered freespecial animation
+* token without atoi(), atoll(), or signed overflow.
+*
+* Recognized distinguishes unrelated animation or input
+* names from malformed freespecial names. The unnumbered
+* legacy spelling "freespecial" selects freespecial1.
+*
+* Return NULL when the token is unrelated or valid.
+* Return error_buffer when a recognized freespecial name
+* is malformed or exceeds the configured animation table.
+*/
+static const char* command_token_get_freespecial_number(
+    const s_command_token* token,
+    bool* recognized,
+    int* result,
+    char* error_buffer,
+    const size_t error_buffer_size
+) {
+    static const char prefix[] = "freespecial";
+
+    const size_t prefix_length = sizeof(prefix) - 1;
 
     s_command_token prefix_token;
     s_command_token suffix_token;
 
+    uint64_t parsed_number;
+
     assert(token);
-    assert(prefix);
+    assert(recognized);
     assert(result);
+    assert(error_buffer);
+    assert(error_buffer_size);
+
+    *recognized = false;
+    *result = 0;
 
     if(token->length < prefix_length) {
-        return false;
+        return NULL;
     }
 
-    /*
-    * Compare only the prefix portion of the token.
-    */
     prefix_token.text = token->text;
     prefix_token.length = prefix_length;
 
     if(!command_token_equals(&prefix_token, prefix)) {
-        return false;
+        return NULL;
     }
 
+    *recognized = true;
+
     /*
-    * Preserve legacy behavior where a numbered name
-    * without an explicit number selects index 1.
+    * Preserve legacy behavior where an omitted suffix
+    * means freespecial1.
     */
     if(token->length == prefix_length) {
         *result = 1;
-        return true;
+        return NULL;
     }
 
-    /*
-    * Numbered animation names begin with 1-9.
-    * This rejects zero, signs, and non-numeric tails.
-    */
     suffix_token.text = token->text + prefix_length;
     suffix_token.length = token->length - prefix_length;
 
     if(suffix_token.text[0] < '1'
         || suffix_token.text[0] > '9') {
-        return false;
+        snprintf(
+            error_buffer,
+            error_buffer_size,
+            "Freespecial animation number must be at least 1."
+        );
+
+        return error_buffer;
     }
 
-    if(!command_token_get_int(&suffix_token, result)) {
-        return false;
+    if(!command_token_get_uint64(&suffix_token, &parsed_number)) {
+        snprintf(
+            error_buffer,
+            error_buffer_size,
+            "Freespecial animation number is malformed or exceeds "
+            "the unsigned 64-bit range."
+        );
+
+        return error_buffer;
     }
 
-    return *result >= 1;
+    if(parsed_number > (uint64_t)max_freespecials) {
+        snprintf(
+            error_buffer,
+            error_buffer_size,
+            "Freespecial animation %" PRIu64 " exceeds maxfreespecials %d.\n"
+            "Increase maxfreespecials in data/models.txt.",
+            parsed_number,
+            max_freespecials
+        );
+
+        return error_buffer;
+    }
+
+    *result = (int)parsed_number;
+
+    return NULL;
 }
 
 /*
@@ -3433,6 +3577,8 @@ static bool command_token_get_input_flag(const s_command_token* token, e_key_def
         const char* name;
         e_key_def flag;
     } input_map[] = {
+        {"l",  FLAG_MOVELEFT},
+        {"r",  FLAG_MOVERIGHT},
         {"u",  FLAG_MOVEUP},
         {"d",  FLAG_MOVEDOWN},
         {"f",  FLAG_FORWARD},
@@ -3443,6 +3589,8 @@ static bool command_token_get_input_flag(const s_command_token* token, e_key_def
         {"a3", FLAG_ATTACK3},
         {"a4", FLAG_ATTACK4},
         {"j",  FLAG_JUMP},
+        {"st", FLAG_START},
+        {"sc", FLAG_SCREENSHOT},
         {"s",  FLAG_SPECIAL},
         {"k",  FLAG_SPECIAL}
     };
@@ -3465,43 +3613,410 @@ static bool command_token_get_input_flag(const s_command_token* token, e_key_def
 }
 
 /*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Parse one configurable special-command input token.
+*
+* Supported forms:
+*
+* key             Positive-edge press.
+* ~key            Negative-edge release.
+* key[min]        Held-state requirement with an
+*                 inclusive minimum duration.
+* key[min][max]   Held-state requirement with inclusive
+*                 minimum and maximum durations. A zero
+*                 maximum means no upper bound.
+* *key[min]       Automatic positive edge generated once
+*                 when the held duration reaches min.
+* key*[min]       Compatible alternate spelling.
+*
+* Return NULL on success or a static error message when
+* the complete token is malformed.
+*/
+static const char* command_token_get_input_requirement(
+    const s_command_token* token,
+    s_command_input_step* result
+) {
+    s_command_token input_name;
+    s_command_token hold_time_minimum_token;
+    s_command_token hold_time_maximum_token;
+
+    e_key_def input_flag;
+
+    size_t hold_minimum_open_index = 0;
+    size_t hold_minimum_close_index = 0;
+    size_t hold_maximum_open_index = 0;
+    size_t input_name_start = 0;
+    size_t input_name_length;
+    size_t index;
+
+    bool automatic_hold = false;
+
+    uint64_t hold_time_minimum;
+    uint64_t hold_time_maximum = 0;
+
+    assert(token);
+    assert(result);
+
+    memset(result, 0, sizeof(*result));
+
+    if(!token->text || token->length == 0) {
+        return "Empty input token in special command";
+    }
+
+    /*
+    * A leading tilde marks a negative-edge input.
+    * Release and hold modifiers remain separate tokens,
+    * as in a[50] + ~a.
+    */
+    if(token->text[0] == '~') {
+        if(token->length == 1) {
+            return "Release input is missing a key name";
+        }
+
+        input_name.text = token->text + 1;
+        input_name.length = token->length - 1;
+
+        for(index = 0; index < input_name.length; index++) {
+            if(input_name.text[index] == '['
+                || input_name.text[index] == ']'
+                || input_name.text[index] == '*'
+                || input_name.text[index] == '~') {
+                return "Release input cannot contain a hold modifier";
+            }
+        }
+
+        if(!command_token_get_input_flag(&input_name, &input_flag)) {
+            return "Invalid release input token in special command";
+        }
+
+        result->release = (key_mask_t)input_flag;
+
+        return NULL;
+    }
+
+    /*
+    * A closing bracket makes the token a held
+    * requirement. The first bracket is the minimum. One
+    * optional second bracket is the inclusive maximum.
+    */
+    if(token->text[token->length - 1] == ']') {
+        for(index = 0; index < token->length; index++) {
+            if(token->text[index] == '[') {
+                hold_minimum_open_index = index;
+                break;
+            }
+        }
+
+        if(!hold_minimum_open_index) {
+            return "Held input is missing a key name or opening bracket";
+        }
+
+        for(index = hold_minimum_open_index + 1;
+            index < token->length;
+            index++) {
+
+            if(token->text[index] == ']') {
+                hold_minimum_close_index = index;
+                break;
+            }
+        }
+
+        if(!hold_minimum_close_index) {
+            return "Held input minimum time is missing a closing bracket";
+        }
+
+        if(hold_minimum_close_index < token->length - 1) {
+            hold_maximum_open_index =
+                hold_minimum_close_index + 1;
+
+            if(token->text[hold_maximum_open_index] != '[') {
+                return "Held input maximum time must immediately follow the minimum";
+            }
+        }
+
+        input_name_length = hold_minimum_open_index;
+
+        /*
+        * Accept the automatic modifier before the key,
+        * as in *a[600]. Keep the earlier a*[600] form as
+        * a compatible alias so existing definitions do
+        * not need conversion.
+        */
+        if(token->text[0] == '*') {
+            automatic_hold = true;
+            input_name_start = 1;
+            input_name_length--;
+
+            if(!input_name_length) {
+                return "Automatic held input is missing a key name";
+            }
+        }
+
+        if(token->text[hold_minimum_open_index - 1] == '*') {
+            if(automatic_hold) {
+                return "Automatic held input has more than one trigger modifier";
+            }
+
+            automatic_hold = true;
+            input_name_length--;
+
+            if(!input_name_length) {
+                return "Automatic held input is missing a key name";
+            }
+        }
+
+        input_name.text = token->text + input_name_start;
+        input_name.length = input_name_length;
+
+        hold_time_minimum_token.text =
+            token->text + hold_minimum_open_index + 1;
+
+        hold_time_minimum_token.length =
+            hold_minimum_close_index
+            - hold_minimum_open_index - 1;
+
+        if(hold_maximum_open_index) {
+            hold_time_maximum_token.text =
+                token->text + hold_maximum_open_index + 1;
+
+            hold_time_maximum_token.length =
+                token->length - hold_maximum_open_index - 2;
+        }
+
+        if(!command_token_get_input_flag(&input_name, &input_flag)) {
+            return "Invalid held input token in special command";
+        }
+
+        if(!command_token_get_uint64(
+            &hold_time_minimum_token,
+            &hold_time_minimum
+        )) {
+            return "Held input minimum time must be an unsigned integer";
+        }
+
+        if(hold_maximum_open_index
+            && !command_token_get_uint64(
+                &hold_time_maximum_token,
+                &hold_time_maximum
+            )) {
+            return "Held input maximum time must be an unsigned integer";
+        }
+
+        if(hold_time_maximum
+            && hold_time_maximum < hold_time_minimum) {
+            return "Held input maximum time must be zero or at least the minimum";
+        }
+
+        if(automatic_hold) {
+            result->hold_trigger = (key_mask_t)input_flag;
+
+        } else {
+            result->hold = (key_mask_t)input_flag;
+        }
+
+        result->hold_time = hold_time_minimum;
+        result->hold_time_maximum = hold_time_maximum;
+
+        return NULL;
+    }
+
+    /*
+    * Brackets, tildes, and stars are only valid in the
+    * complete decorated forms handled above.
+    */
+    for(index = 0; index < token->length; index++) {
+        if(token->text[index] == '['
+            || token->text[index] == ']'
+            || token->text[index] == '*'
+            || token->text[index] == '~') {
+            return "Malformed input modifier in special command";
+        }
+    }
+
+    input_name = *token;
+
+    if(!command_token_get_input_flag(&input_name, &input_flag)) {
+        return "Invalid input token in special command";
+    }
+
+    result->press = (key_mask_t)input_flag;
+
+    return NULL;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-18
+*
+* Parse the optional grace modifier for a plain press
+* chord. The complete token form is +[time].
+*
+* Recognized distinguishes a non-modifier token from a
+* malformed modifier. Return NULL when the token is not
+* a modifier or when parsing succeeds. Return a static
+* error message when a modifier begins with +[ but does
+* not contain one unsigned tick value.
+*/
+static const char* command_token_get_chord_time_modifier(
+    const s_command_token* token,
+    bool* recognized,
+    uint64_t* result
+) {
+    s_command_token chord_time_token;
+
+    assert(token);
+    assert(recognized);
+    assert(result);
+
+    *recognized = false;
+    *result = 0;
+
+    if(token->length < 2
+        || token->text[0] != '+'
+        || token->text[1] != '[') {
+        return NULL;
+    }
+
+    *recognized = true;
+
+    if(token->length < 4
+        || token->text[token->length - 1] != ']') {
+        return "Chord grace time must use +[time]";
+    }
+
+    chord_time_token.text = token->text + 2;
+    chord_time_token.length = token->length - 3;
+
+    if(!command_token_get_uint64(&chord_time_token, result)) {
+        return "Chord grace time must be an unsigned integer";
+    }
+
+    return NULL;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-18
+*
+* Parse the optional grace modifier for a complete
+* command sequence. The complete token form is
+* :[time].
+*
+* Recognized distinguishes a non-modifier token from a
+* malformed modifier. Return NULL when the token is not
+* a modifier or when parsing succeeds. Return a static
+* error message when a modifier begins with :[ but does
+* not contain one unsigned logical tick value.
+*/
+static const char* command_token_get_sequence_grace_time_modifier(const s_command_token* token, bool* recognized, uint64_t* result) {
+    
+    s_command_token sequence_grace_time_token;
+
+    assert(token);
+    assert(recognized);
+    assert(result);
+
+    *recognized = false;
+    *result = 0;
+
+    if(token->length < 2
+        || token->text[0] != ':'
+        || token->text[1] != '[') {
+        return NULL;
+    }
+
+    *recognized = true;
+
+    if(token->length < 4
+        || token->text[token->length - 1] != ']') {
+        return "Sequence grace time must use :[time]";
+    }
+
+    sequence_grace_time_token.text = token->text + 2;
+    sequence_grace_time_token.length = token->length - 3;
+
+    if(!command_token_get_uint64(&sequence_grace_time_token, result)) {
+        return "Sequence grace time must be an unsigned integer";
+    }
+
+    return NULL;
+}
+
+/*
 * Parse the input-sequence portion of a special command.
 *
 * Sequence grammar:
 *
 * input [-> input ...] freespecial#
-* input + input [-> input ...] freespecial#
+* input + input [+[time]] [-> input ...] freespecial#
 *
 * The arrow token is an optional visual separator.
 * The plus token combines the following input with the
-* preceding sequence step.
+* preceding sequence step. The +[time] token overrides
+* same-tick sensitivity for the preceding press chord.
+* The :[time] token overrides the global grace time
+* between every step in this command sequence. It may
+* appear once in any token position outside an unfinished
+* plus expression.
 *
 * Return NULL on success. Return a static error message
 * when the sequence is invalid.
 */
-static const char* special_command_parse_sequence(s_command_token_reader* reader, s_com* special, int64_t* freespecial_number) {
+static const char* special_command_parse_sequence(
+    s_command_token_reader* reader,
+    s_com* special,
+    int* freespecial_number,
+    char* error_buffer,
+    const size_t error_buffer_size
+) {
     s_command_token token;
-    e_key_def input_flag;
+
+    s_command_input_step input_requirement;
+    s_command_input_step* destination_step;
 
     size_t step_count = 0;
+    size_t step_index;
 
     bool combine_with_previous = false;
+
+    uint64_t chord_time_defined_steps = 0;
 
     assert(reader);
     assert(special);
     assert(freespecial_number);
+    assert(error_buffer);
+    assert(error_buffer_size);
 
     *freespecial_number = 0;
     special->numkeys = 0;
     special->steps = 0;
+    special->sequence_grace_time = 0;
+    special->sequence_grace_time_override = false;
 
     while(command_token_reader_next(reader, &token)) {
-        int64_t numbered_animation;
+        bool freespecial_recognized;
+
+        int numbered_animation;
+
+        const char* freespecial_error =
+            command_token_get_freespecial_number(
+                &token,
+                &freespecial_recognized,
+                &numbered_animation,
+                error_buffer,
+                error_buffer_size
+            );
+
+        if(freespecial_error) {
+            return freespecial_error;
+        }
 
         /*
         * Destination animation terminates the sequence.
         */
-        if(command_token_get_numbered_suffix(&token, "freespecial", &numbered_animation)) {
+        if(freespecial_recognized) {
             
             /*
             * A plus token must be followed by another
@@ -3519,10 +4034,78 @@ static const char* special_command_parse_sequence(s_command_token_reader* reader
                 return "Unexpected token after special command animation";
             }
 
+            if(step_count == 0) {
+                return "Special command requires at least one input step";
+            }
+
+            if(special->sequence_grace_time_override
+                && step_count < 2) {
+                return "Sequence grace time requires at least two complete input steps";
+            }
+
+            /*
+            * Passive held requirements qualify a press,
+            * release, or future automatic hold event. They
+            * cannot create a sequence step by themselves.
+            */
+            for(step_index = 0;
+                step_index < step_count;
+                step_index++) {
+
+                const s_command_input_step* input_step =
+                    &special->input[step_index];
+
+                if(!input_step->press
+                    && !input_step->release
+                    && !input_step->hold_trigger) {
+                    return "Held input step requires a press, release, or automatic trigger";
+                }
+            }
+
             special->steps = (int)step_count;
             *freespecial_number = numbered_animation;
 
             return NULL;
+        }
+
+        /*
+        * Optional command-wide grace between separate
+        * input steps. A zero value is a valid explicit
+        * override, so the boolean records its presence.
+        * Its token position does not affect its scope.
+        */
+        {
+            bool sequence_grace_time_recognized;
+
+            uint64_t sequence_grace_time;
+
+            const char* sequence_grace_time_error =
+                command_token_get_sequence_grace_time_modifier(
+                    &token,
+                    &sequence_grace_time_recognized,
+                    &sequence_grace_time
+                );
+
+            if(sequence_grace_time_error) {
+                return sequence_grace_time_error;
+            }
+
+            if(sequence_grace_time_recognized) {
+                if(combine_with_previous) {
+                    return "Sequence grace time cannot interrupt a '+' expression";
+                }
+
+                if(special->sequence_grace_time_override) {
+                    return "Sequence grace time is already defined for this command";
+                }
+
+                special->sequence_grace_time =
+                    sequence_grace_time;
+
+                special->sequence_grace_time_override = true;
+
+                continue;
+            }
         }
 
         /*
@@ -3532,11 +4115,62 @@ static const char* special_command_parse_sequence(s_command_token_reader* reader
         * arrows after at least one input step.
         */
         if(command_token_equals(&token, "->")) {
-            if(step_count == 0 || combine_with_previous) {
+            if(combine_with_previous
+                || (step_count == 0
+                    && !special->sequence_grace_time_override)) {
                 return "Invalid '->' placement in special command";
             }
 
             continue;
+        }
+
+        /*
+        * Optional grace for the multi-key press chord in
+        * the current sequence step.
+        */
+        {
+            bool chord_time_recognized;
+
+            uint64_t chord_time;
+
+            const char* chord_time_error =
+                command_token_get_chord_time_modifier(
+                    &token,
+                    &chord_time_recognized,
+                    &chord_time
+                );
+
+            if(chord_time_error) {
+                return chord_time_error;
+            }
+
+            if(chord_time_recognized) {
+                uint64_t step_flag;
+
+                if(step_count == 0 || combine_with_previous) {
+                    return "Chord grace time must follow a complete press chord";
+                }
+
+                destination_step =
+                    &special->input[step_count - 1];
+
+                if(!(destination_step->press
+                    & (destination_step->press - 1))) {
+                    return "Chord grace time requires a multi-key press chord";
+                }
+
+                step_flag =
+                    UINT64_C(1) << (step_count - 1);
+
+                if(chord_time_defined_steps & step_flag) {
+                    return "Chord grace time is already defined for this step";
+                }
+
+                destination_step->chord_time = chord_time;
+                chord_time_defined_steps |= step_flag;
+
+                continue;
+            }
         }
 
         /*
@@ -3552,24 +4186,63 @@ static const char* special_command_parse_sequence(s_command_token_reader* reader
             continue;
         }
 
-        /*
-        * Every remaining token must identify an input.
-        */
-        if(!command_token_get_input_flag(&token, &input_flag)) {
-            return "Invalid input token in special command";
+        {
+            const char* input_error =
+                command_token_get_input_requirement(
+                    &token,
+                    &input_requirement
+                );
+
+            if(input_error) {
+                return input_error;
+            }
         }
 
         if(combine_with_previous) {
-            special->input[step_count - 1] |= input_flag;
+            destination_step =
+                &special->input[step_count - 1];
+
             combine_with_previous = false;
+
         } else {
             if(step_count >= MAX_SPECIAL_INPUTS) {
-                return "Special command exceeds maximum input steps";
+                return "Special command exceeds the maximum of 64 sequence steps.";
             }
 
-            special->input[step_count] = input_flag;
+            destination_step = &special->input[step_count];
             step_count++;
         }
+
+        /*
+        * One command step stores one held-time range.
+        * Multiple held inputs may share that range, but a
+        * step cannot silently collapse different bounds.
+        */
+        if(input_requirement.hold
+            || input_requirement.hold_trigger) {
+
+            if((destination_step->hold
+                    || destination_step->hold_trigger)
+                && (destination_step->hold_time
+                        != input_requirement.hold_time
+                    || destination_step->hold_time_maximum
+                        != input_requirement.hold_time_maximum)) {
+                return "Held inputs combined in one step must use the same time range";
+            }
+
+            destination_step->hold_time =
+                input_requirement.hold_time;
+
+            destination_step->hold_time_maximum =
+                input_requirement.hold_time_maximum;
+        }
+
+        destination_step->press |= input_requirement.press;
+        destination_step->hold |= input_requirement.hold;
+        destination_step->hold_trigger |=
+            input_requirement.hold_trigger;
+
+        destination_step->release |= input_requirement.release;
 
         /*
         * Preserve existing ranking behavior. numkeys
@@ -5812,10 +6485,96 @@ static void load_playable_list(char *buf)
     return;
 }
 
-void alloc_specials(s_model *newchar)
+/*
+* Caskey, Damon V.
+* 2026-07-18 - Original author and date unknown, reworked 2026-07-06.
+*
+* Expand the model's configurable special-command table
+* by one zero-initialized entry.
+*
+* Preserve an owned table until realloc succeeds. When a
+* subclass still shares its parent's table, allocate and
+* copy the inherited entries before appending so changes
+* cannot modify or reallocate the parent table.
+*/
+static bool alloc_specials(s_model* newchar)
 {
-    newchar->special = realloc(newchar->special, sizeof(s_com) * (newchar->specials_loaded + 1));
-    memset(newchar->special + newchar->specials_loaded, 0, sizeof(s_com));
+    s_com* expanded_specials;
+    size_t expanded_count;
+    bool owns_special_table;
+
+    if(!newchar
+        || newchar->specials_loaded < 0
+        || newchar->specials_loaded == INT_MAX) {
+        return false;
+    }
+
+    owns_special_table =
+        (newchar->freetypes & MF_SPECIAL) != 0;
+
+    /*
+    * A subclass initially shares its parent's command
+    * table. A positive inherited count without a table
+    * is invalid and cannot be copied safely.
+    */
+    if(newchar->specials_loaded > 0
+        && !newchar->special) {
+        return false;
+    }
+
+    /*
+    * Calculate the new size of the table, which is
+    * the current number of loaded specials plus one
+    * for the new entry. Check for overflow before
+    * attempting to realloc the table.
+    */
+    expanded_count = (size_t)newchar->specials_loaded + 1;
+
+    if(expanded_count > SIZE_MAX / sizeof(*expanded_specials)) {
+        return false;
+    }
+
+    /*
+    * Models that own their table may expand it in place.
+    * A subclass that still shares an inherited table must
+    * allocate and copy first, leaving the parent untouched.
+    */
+
+    if(owns_special_table) {
+        expanded_specials = realloc(
+            newchar->special,
+            sizeof(*expanded_specials) * expanded_count
+        );
+    } else {
+        expanded_specials = malloc(
+            sizeof(*expanded_specials) * expanded_count
+        );
+
+        if(expanded_specials
+            && newchar->specials_loaded > 0) {
+            memcpy(
+                expanded_specials,
+                newchar->special,
+                sizeof(*expanded_specials)
+                    * (size_t)newchar->specials_loaded
+            );
+        }
+    }
+
+    if(!expanded_specials) {
+        return false;
+    }
+
+    newchar->special = expanded_specials;
+    newchar->freetypes |= MF_SPECIAL;
+
+    memset(
+        &newchar->special[newchar->specials_loaded],
+        0,
+        sizeof(*newchar->special)
+    );
+
+    return true;
 }
 
 void alloc_frames(s_anim *anim, int fcount)
@@ -6318,6 +7077,12 @@ void free_models()
     {
         free(animbackdies);
         animbackdies        = NULL;
+    }
+    if(ai_attack_choices)
+    {
+        free(ai_attack_choices);
+        ai_attack_choices = NULL;
+        ai_attack_choice_capacity = 0;
     }
 }
 
@@ -10401,11 +11166,6 @@ static int translate_ani_id(const char *value, s_model *newchar, s_anim *newanim
     {
         ani_id = ANI_JUMPSPECIAL;
     }
-    else if(starts_with_num(value, "freespecial"))
-    {
-        get_tail_number(tempInt, value, "freespecial");
-        ani_id = animspecials[tempInt - 1];
-    }
     else if(stricmp(value, "jumpattack") == 0)
     {
         ani_id = ANI_JUMPATTACK;
@@ -12788,7 +13548,25 @@ s_model *init_model(const int cacheindex, const int unload)
     newchar->attackthrottle				= 0.0f;
     newchar->attackthrottletime			= noatk_duration * global_config.game_speed;
 
-    newchar->animation = calloc(max_animations, sizeof(*newchar->animation));
+    /*
+    * max_animations originates in data/models.txt. Check
+    * the per-model table multiplication before allocating.
+    */
+    if(max_animations <= 0
+        || (size_t)max_animations
+            > SIZE_MAX / sizeof(*newchar->animation)) {
+        borShutdown(
+            1,
+            "Invalid per-model animation table size (%d). "
+            "Check animation limits in data/models.txt.\n",
+            max_animations
+        );
+    }
+
+    newchar->animation = calloc(
+        (size_t)max_animations,
+        sizeof(*newchar->animation)
+    );
     if(!newchar->animation)
     {
         borShutdown(1, (char *)E_OUT_OF_MEMORY);
@@ -12920,7 +13698,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
 
     unsigned* mapflag = NULL;  // in 24bit mode, we need to know whether a colourmap is a common map or a palette
 
-    char alert_buffer[128] = { 0 }; // So we can concatenate specifics *like range max/min* into alert messages.
+    char alert_buffer[256] = { 0 }; // So we can concatenate specifics *like range max/min* into alert messages.
 
     const char pre_text[] =   // this is the skeleton of frame function
     {
@@ -12938,7 +13716,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
 
     const char ifid_text[] =  // if expression to check animation id
     {
-        "    if(animhandle==%d)\n"
+        "    if(animhandle==%" PRId64 ")\n"
         "    {\n"
         "        return;\n"
         "    }\n"
@@ -14424,60 +15202,50 @@ s_model *load_cached_model(char *name, char *owner, char unload)
                 };
 
                 s_command_token token;
-                s_com* special;
+
+                /*
+                * Parse into a temporary command first. This prevents
+                * a malformed line from partially modifying the model.
+                */
+                s_com parsed_special = {0};
 
                 const char* parse_error;
 
-                int64_t freespecial_number;
+                int freespecial_number;
 
                 /*
                 * Consume and verify the command-name token.
                 */
                 if(!command_token_reader_next(&token_reader, &token) || !command_token_equals(&token, "com")) {
-                    shutdownmessage = "Invalid freespecial command name";
+                    shutdownmessage = "Invalid freespecial command name.\n";
                     goto lCleanup;
                 }
-
-                /*
-                * Allocate a zero-initialized command entry.
-                */
-                alloc_specials(newchar);
-                special = &newchar->special[newchar->specials_loaded];
 
                 /*
                 * Parse all sequence tokens through the destination
                 * freespecial animation.
                 */
-                parse_error = special_command_parse_sequence(&token_reader, special, &freespecial_number);
+                parse_error = special_command_parse_sequence(
+                    &token_reader,
+                    &parsed_special,
+                    &freespecial_number,
+                    alert_buffer,
+                    sizeof(alert_buffer)
+                );
 
                 if(parse_error) {
                     shutdownmessage = parse_error;
                     goto lCleanup;
                 }
 
-                /*
-                * Validate before indexing the dynamic freespecial
-                * animation table.
-                */
-                if(freespecial_number < 1 || freespecial_number > max_freespecials) {
-                    
-                    shutdownmessage = "Freespecial animation index is out of range";
+                parsed_special.anim = animspecials[freespecial_number - 1];
 
+                if(!alloc_specials(newchar)) {
+                    shutdownmessage = E_OUT_OF_MEMORY;
                     goto lCleanup;
                 }
 
-                special->anim = animspecials[freespecial_number - 1];
-
-                /*
-                printf(
-                    "COM parsed: steps=%d, keys=%d, freespecial=%d, anim=%d\n",
-                    special->steps,
-                    special->numkeys,
-                    freespecial_number,
-                    special->anim
-                );
-                */
-
+                newchar->special[newchar->specials_loaded] = parsed_special;
                 newchar->specials_loaded++;
             }
             break;
@@ -14703,7 +15471,36 @@ s_model *load_cached_model(char *name, char *owner, char unload)
                 break;
             case CMD_MODEL_ANIM:
             {
+                bool freespecial_recognized;
+
+                int freespecial_number;
+
+                s_command_token animation_name_token;
+
+                const char* freespecial_error;
+
                 value = GET_ARG(1);
+
+                /*
+                * Parse numbered freespecial animations before any
+                * allocation or animation-table indexing takes place.
+                */
+                animation_name_token.text = value;
+                animation_name_token.length = strlen(value);
+
+                freespecial_error = command_token_get_freespecial_number(
+                    &animation_name_token,
+                    &freespecial_recognized,
+                    &freespecial_number,
+                    alert_buffer,
+                    sizeof(alert_buffer)
+                );
+
+                if(freespecial_error) {
+                    shutdownmessage = freespecial_error;
+                    goto lCleanup;
+                }
+
                 frameset = 0;
                 framecount = 0;
                 // Create new animation
@@ -14805,7 +15602,14 @@ s_model *load_cached_model(char *name, char *owner, char unload)
                 newanim->quakeframe.framestart  = 0;
                 newanim->sync                   = FRAME_NONE;
 
-                if((ani_id = translate_ani_id(value, newchar, newanim)) < 0)
+                if(freespecial_recognized) {
+                    ani_id = animspecials[freespecial_number - 1];
+
+                } else {
+                    ani_id = translate_ani_id(value, newchar, newanim);
+                }
+
+                if(ani_id < 0)
                 {
                     shutdownmessage = "Invalid animation name!";
                     goto lCleanup;
@@ -14828,8 +15632,41 @@ s_model *load_cached_model(char *name, char *owner, char unload)
                 newanim->size.y = GET_INT_ARG(1);
                 break;
             case CMD_MODEL_SYNC:
-                //if you want to remove default sync setting for idle or walk, use none
-                newanim->sync = translate_ani_id(GET_ARG(1), NULL, NULL);
+            {
+                bool freespecial_recognized;
+
+                int freespecial_number;
+
+                s_command_token animation_name_token;
+
+                const char* freespecial_error;
+
+                value = GET_ARG(1);
+
+                animation_name_token.text = value;
+                animation_name_token.length = strlen(value);
+
+                freespecial_error = command_token_get_freespecial_number(
+                    &animation_name_token,
+                    &freespecial_recognized,
+                    &freespecial_number,
+                    alert_buffer,
+                    sizeof(alert_buffer)
+                );
+
+                if(freespecial_error) {
+                    shutdownmessage = freespecial_error;
+                    goto lCleanup;
+                }
+
+                /*
+                * "none" intentionally translates to FRAME_NONE and
+                * continues to disable the default synchronization.
+                */
+                newanim->sync = freespecial_recognized
+                    ? animspecials[freespecial_number - 1]
+                    : translate_ani_id(value, NULL, NULL);
+            }
                 break;
             case CMD_MODEL_DELAY:
 
@@ -15347,111 +16184,124 @@ s_model *load_cached_model(char *name, char *owner, char unload)
 
                 break;
             case CMD_MODEL_CANCEL:
-            {
-                int i, t;
-                int add_flag = 0;
-                alloc_specials(newchar);
-                newanim->cancel = ANIMATION_CANCEL_ENABLED;
-                newchar->special[newchar->specials_loaded].numkeys = 0;
-                for(i = 0, t = 4; i < MAX_SPECIAL_INPUTS - 6; i++, t++)
                 {
-                    value = GET_ARG(t);
-                    if(!value[0])
-                    {
-                        break;
-                    }
-                    if(stricmp(value, "u") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_MOVEUP;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_MOVEUP;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "d") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_MOVEDOWN;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_MOVEDOWN;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "f") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_FORWARD;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_FORWARD;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "b") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_BACKWARD;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_BACKWARD;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "a") == 0 || stricmp(value, "a1") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_ATTACK;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_ATTACK;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "a2") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_ATTACK2;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_ATTACK2;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "a3") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_ATTACK3;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_ATTACK3;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "a4") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_ATTACK4;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_ATTACK4;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "j") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_JUMP;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_JUMP;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(stricmp(value, "s") == 0 || stricmp(value, "k") == 0)
-                    {
-                        if (!add_flag) newchar->special[newchar->specials_loaded].input[i] = FLAG_SPECIAL;
-                        else newchar->special[newchar->specials_loaded].input[i] |= FLAG_SPECIAL;
-                        ++newchar->special[newchar->specials_loaded].numkeys;
-                    }
-                    else if(starts_with_num(value, "freespecial"))
-                    {
-                        get_tail_number(tempInt, value, "freespecial");
-                        newchar->special[newchar->specials_loaded].anim = animspecials[tempInt - 1];
-                        newchar->special[newchar->specials_loaded].frame.min = GET_INT_ARG(1); // stores start frame
-                        newchar->special[newchar->specials_loaded].frame.max = GET_INT_ARG(2); // stores end frame
-                        newchar->special[newchar->specials_loaded].cancel = ani_id;                    // stores current anim
-                        newchar->special[newchar->specials_loaded].hits = GET_INT_ARG(3);// stores hits
-                    }
-                    else if(stricmp(value, "+") == 0 && i > 1)
-                    {
-                        add_flag = 1;
-                        i -= 2;
-                        continue;
-                    }
-                    else if(stricmp(value, "->") == 0 && i > 0)
-                    {
-                        // just for better reading
-                        --i;
-                        continue;
-                    }
-                    else
-                    {
-                        shutdownmessage = "Invalid cancel command!";
+                    s_command_token_reader token_reader = {
+                        .cursor = buf + pos
+                    };
+
+                    s_command_token token;
+
+                    /*
+                    * Parse into a temporary command first. This prevents
+                    * a malformed line from partially modifying the model.
+                    */
+                    s_com parsed_special = {0};
+
+                    const char* parse_error;
+
+                    int64_t frame_min;
+                    int64_t frame_max;
+                    int64_t required_hits;
+                    int freespecial_number;
+
+                    /*
+                    * Cancel belongs to the currently active animation.
+                    */
+                    if(!newanim || ani_id < 0) {
+                        shutdownmessage =
+                            "Cannot add cancel command: animation not specified.\n";
+
                         goto lCleanup;
                     }
-                    add_flag = 0;
+
+                    /*
+                    * Consume and verify the command-name token.
+                    */
+                    if(!command_token_reader_next(&token_reader, &token) || !command_token_equals(&token, "cancel")) {
+                        shutdownmessage = "Invalid cancel command name.\n";
+                        goto lCleanup;
+                    }
+
+                    /*
+                    * Fixed cancel parameters precede the input sequence.
+                    */
+                    if(!command_token_reader_next_int64(&token_reader, &frame_min)) {
+                        shutdownmessage =
+                            "Cancel command requires an integer start frame.\n";
+
+                        goto lCleanup;
+                    }
+
+                    if(!command_token_reader_next_int64(&token_reader, &frame_max)) {
+                        shutdownmessage =
+                            "Cancel command requires an integer end frame.\n";
+
+                        goto lCleanup;
+                    }
+
+                    if(!command_token_reader_next_int64(&token_reader, &required_hits)) {
+                        shutdownmessage =
+                            "Cancel command requires an integer hit count. "
+                            "0 means no hit requirement.\n";
+
+                        goto lCleanup;
+                    }
+
+                    if(required_hits < 0) {
+                        snprintf(
+                            alert_buffer,
+                            sizeof(alert_buffer),
+                            "Cancel command hit count (%" PRId64 ") cannot be negative.\n",
+                            required_hits
+                        );
+
+                        shutdownmessage = alert_buffer;
+                        goto lCleanup;
+                    }
+
+                    /*
+                    * Parse the variable-length input sequence. The
+                    * freespecial token terminates the sequence.
+                    */
+                    parse_error = special_command_parse_sequence(
+                        &token_reader,
+                        &parsed_special,
+                        &freespecial_number,
+                        alert_buffer,
+                        sizeof(alert_buffer)
+                    );
+
+                    if(parse_error) {
+                        shutdownmessage = parse_error;
+                        goto lCleanup;
+                    }
+
+                    /*
+                    * Complete cancel-specific command properties.
+                    */
+                    parsed_special.anim = animspecials[freespecial_number - 1];
+
+                    parsed_special.frame.min = frame_min;
+                    parsed_special.frame.max = frame_max;
+                    parsed_special.cancel = ani_id;
+                    parsed_special.hits = (uint64_t)required_hits;
+
+                    /*
+                    * Commit only after the complete command has parsed
+                    * and validated successfully.
+                    */
+                    if(!alloc_specials(newchar)) {
+                        shutdownmessage = E_OUT_OF_MEMORY;
+                        goto lCleanup;
+                    }
+
+                    newchar->special[newchar->specials_loaded] = parsed_special;
+                    newanim->cancel = ANIMATION_CANCEL_ENABLED;
+                    
+                    newchar->specials_loaded++;
                 }
-                newchar->special[newchar->specials_loaded].steps = i - 1; // max steps
-                newchar->specials_loaded++;
-            }
-            break;
+                break;
+
             case CMD_MODEL_SOUND:
                 soundtoplay = sound_load_sample(GET_ARG(1), packfile, 1);
                 break;
@@ -17386,30 +18236,45 @@ s_model *load_cached_model(char *name, char *owner, char unload)
     //temporary patch for conflicting moves
     if(newchar->animation[ANI_FREESPECIAL] && !is_set(newchar, ANI_FREESPECIAL))
     {
-        alloc_specials(newchar);
-        newchar->special[newchar->specials_loaded].input[0] = FLAG_FORWARD;
-        newchar->special[newchar->specials_loaded].input[1] = FLAG_FORWARD;
-        newchar->special[newchar->specials_loaded].input[2] = FLAG_ATTACK;
+        if(!alloc_specials(newchar))
+        {
+            shutdownmessage = E_OUT_OF_MEMORY;
+            goto lCleanup;
+        }
+
+        newchar->special[newchar->specials_loaded].input[0].press = FLAG_FORWARD;
+        newchar->special[newchar->specials_loaded].input[1].press = FLAG_FORWARD;
+        newchar->special[newchar->specials_loaded].input[2].press = FLAG_ATTACK;
         newchar->special[newchar->specials_loaded].anim = ANI_FREESPECIAL;
         newchar->special[newchar->specials_loaded].steps = 3;
         newchar->specials_loaded++;
     }
     if(newchar->animation[ANI_FREESPECIAL2] && !is_set(newchar, ANI_FREESPECIAL2))
     {
-        alloc_specials(newchar);
-        newchar->special[newchar->specials_loaded].input[0] = FLAG_MOVEDOWN;
-        newchar->special[newchar->specials_loaded].input[1] = FLAG_MOVEDOWN;
-        newchar->special[newchar->specials_loaded].input[2] = FLAG_ATTACK;
+        if(!alloc_specials(newchar))
+        {
+            shutdownmessage = E_OUT_OF_MEMORY;
+            goto lCleanup;
+        }
+
+        newchar->special[newchar->specials_loaded].input[0].press = FLAG_MOVEDOWN;
+        newchar->special[newchar->specials_loaded].input[1].press = FLAG_MOVEDOWN;
+        newchar->special[newchar->specials_loaded].input[2].press = FLAG_ATTACK;
         newchar->special[newchar->specials_loaded].anim = ANI_FREESPECIAL2;
         newchar->special[newchar->specials_loaded].steps = 3;
         newchar->specials_loaded++;
     }
     if(newchar->animation[ANI_FREESPECIAL3] && !is_set(newchar, ANI_FREESPECIAL3))
     {
-        alloc_specials(newchar);
-        newchar->special[newchar->specials_loaded].input[0] = FLAG_MOVEUP;
-        newchar->special[newchar->specials_loaded].input[1] = FLAG_MOVEUP;
-        newchar->special[newchar->specials_loaded].input[2] = FLAG_ATTACK;
+        if(!alloc_specials(newchar))
+        {
+            shutdownmessage = E_OUT_OF_MEMORY;
+            goto lCleanup;
+        }
+
+        newchar->special[newchar->specials_loaded].input[0].press = FLAG_MOVEUP;
+        newchar->special[newchar->specials_loaded].input[1].press = FLAG_MOVEUP;
+        newchar->special[newchar->specials_loaded].input[2].press = FLAG_ATTACK;
         newchar->special[newchar->specials_loaded].anim = ANI_FREESPECIAL3;
         newchar->special[newchar->specials_loaded].steps = 3;
         newchar->specials_loaded++;
@@ -17711,10 +18576,82 @@ int load_script_setting()
     return 1;
 }
 
+/*
+* Convert one models.txt limit to an int without signed
+* overflow or partial numeric conversion.
+*/
+static bool model_constant_get_unsigned_int(const char* text, int* result)
+{
+    s_command_token token;
+    uint64_t parsed_value;
+
+    assert(text);
+    assert(result);
+
+    token.text = text;
+    token.length = strlen(text);
+
+    if(!command_token_get_uint64(&token, &parsed_value)
+        || parsed_value > (uint64_t)INT_MAX) {
+        return false;
+    }
+
+    *result = (int)parsed_value;
+
+    return true;
+}
+
+/*
+* Allocate a models.txt-driven table only after checking
+* its multiplication. Allocation failure is fatal because
+* model loading cannot safely continue with a missing table.
+*/
+static void* model_constant_array_allocate(
+    const size_t element_count,
+    const size_t element_size,
+    const char* table_name,
+    const char* filename
+) {
+    void* result;
+
+    assert(table_name);
+    assert(filename);
+
+    if(element_count == 0
+        || element_size == 0
+        || element_count > SIZE_MAX / element_size) {
+        borShutdown(
+            1,
+            "Invalid allocation size for %s while loading %s.\n",
+            table_name,
+            filename
+        );
+
+        return NULL;
+    }
+
+    result = malloc(element_count * element_size);
+
+    if(!result) {
+        borShutdown(
+            1,
+            "Unable to allocate %zu entries for %s while loading %s.\n",
+            element_count,
+            table_name,
+            filename
+        );
+
+        return NULL;
+    }
+
+    return result;
+}
+
 void load_model_constants()
 {
     char filename[MAX_BUFFER_LEN] = "data/models.txt";
     int i;
+    int64_t calculated_max_animations;
     char *buf;
     size_t size;
     ptrdiff_t pos;
@@ -17840,6 +18777,12 @@ void load_model_constants()
         free(animdowns);
         animdowns = NULL;
     }
+    if(ai_attack_choices)
+    {
+        free(ai_attack_choices);
+        ai_attack_choices = NULL;
+        ai_attack_choice_capacity = 0;
+    }
 
     // Read file
     if(buffer_pakfile(filename, &buf, &size) != 1)
@@ -17922,7 +18865,21 @@ void load_model_constants()
                 break;
             case CMD_MODELSTXT_MAXFREESPECIALS:
                 // max freespecials
-                max_freespecials = GET_INT_ARG(1);
+                if(!model_constant_get_unsigned_int(
+                    GET_ARG(1),
+                    &max_freespecials
+                )) {
+                    borShutdown(
+                        1,
+                        "Invalid maxfreespecials value '%s' in %s, line %d. "
+                        "Expected an unsigned integer no greater than %d.\n",
+                        GET_ARG(1),
+                        filename,
+                        line,
+                        INT_MAX
+                    );
+                }
+
                 if(max_freespecials < MAX_SPECIALS)
                 {
                     max_freespecials = MAX_SPECIALS;
@@ -17948,38 +18905,60 @@ void load_model_constants()
         pos += getNewLineStart(buf + pos);
     }
 
-    // calculate max animations
-    max_animations += (max_attack_types - MAX_ATKS) * 12 +// multply by 11: fall/die/pain/backpain/backfalls/backdies/rise/backrise/blockpain/backblockpain/riseattack/backriseattck
-                      (max_follows - MAX_FOLLOWS) +
-                      (max_freespecials - MAX_SPECIALS) +
-                      (max_attacks - MAX_ATTACKS) +
-                      (max_idles - MAX_IDLES) +
-                      (max_walks - MAX_WALKS) +
-                      (max_ups - MAX_UPS) +
-                      (max_downs - MAX_DOWNS) +
-                      (max_backwalks - MAX_BACKWALKS);
+    /*
+    * Calculate in a wider type before assigning the int
+    * animation identifiers used throughout the engine.
+    */
+    calculated_max_animations =
+        (int64_t)MAX_ANIS
+        + ((int64_t)max_attack_types - MAX_ATKS) * INT64_C(12)
+        + ((int64_t)max_follows - MAX_FOLLOWS)
+        + ((int64_t)max_freespecials - MAX_SPECIALS)
+        + ((int64_t)max_attacks - MAX_ATTACKS)
+        + ((int64_t)max_idles - MAX_IDLES)
+        + ((int64_t)max_walks - MAX_WALKS)
+        + ((int64_t)max_ups - MAX_UPS)
+        + ((int64_t)max_downs - MAX_DOWNS)
+        + ((int64_t)max_backwalks - MAX_BACKWALKS);
+
+    if(calculated_max_animations < MAX_ANIS
+        || calculated_max_animations > INT_MAX) {
+        borShutdown(
+            1,
+            "Configured model animation limits require %" PRId64
+            " animation identifiers, but the supported maximum is %d "
+            "while loading %s.\n",
+            calculated_max_animations,
+            INT_MAX,
+            filename
+        );
+    }
+
+    max_animations = (int)calculated_max_animations;
 
     // alloc indexed animation ids
-    animdowns = malloc(sizeof(*animdowns) * max_downs);
-    animups = malloc(sizeof(*animups) * max_ups);
-    animbackwalks = malloc(sizeof(*animbackwalks) * max_backwalks);
-    animwalks = malloc(sizeof(*animwalks) * max_walks);
-    animidles = malloc(sizeof(*animidles) * max_idles);
-    animpains = malloc(sizeof(*animpains) * max_attack_types);
-    animbackpains = malloc(sizeof(*animbackpains) * max_attack_types);
-    animdies = malloc(sizeof(*animdies) * max_attack_types);
-    animbackdies = malloc(sizeof(*animbackdies) * max_attack_types);
-    animfalls = malloc(sizeof(*animfalls) * max_attack_types);
-    animbackfalls = malloc(sizeof(*animbackfalls) * max_attack_types);
-    animrises = malloc(sizeof(*animrises) * max_attack_types);
-    animbackrises = malloc(sizeof(*animbackrises) * max_attack_types);
-    animriseattacks = malloc(sizeof(*animriseattacks) * max_attack_types);
-    animbackriseattacks = malloc(sizeof(*animbackriseattacks) * max_attack_types);
-    animblkpains = malloc(sizeof(*animblkpains) * max_attack_types);
-    animbackblkpains = malloc(sizeof(*animbackblkpains) * max_attack_types);
-    animattacks = malloc(sizeof(*animattacks) * max_attacks);
-    animfollows = malloc(sizeof(*animfollows) * max_follows);
-    animspecials = malloc(sizeof(*animspecials) * max_freespecials);
+    animdowns = model_constant_array_allocate((size_t)max_downs, sizeof(*animdowns), "down animation identifiers", filename);
+    animups = model_constant_array_allocate((size_t)max_ups, sizeof(*animups), "up animation identifiers", filename);
+    animbackwalks = model_constant_array_allocate((size_t)max_backwalks, sizeof(*animbackwalks), "backwalk animation identifiers", filename);
+    animwalks = model_constant_array_allocate((size_t)max_walks, sizeof(*animwalks), "walk animation identifiers", filename);
+    animidles = model_constant_array_allocate((size_t)max_idles, sizeof(*animidles), "idle animation identifiers", filename);
+    animpains = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animpains), "pain animation identifiers", filename);
+    animbackpains = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackpains), "back-pain animation identifiers", filename);
+    animdies = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animdies), "death animation identifiers", filename);
+    animbackdies = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackdies), "back-death animation identifiers", filename);
+    animfalls = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animfalls), "fall animation identifiers", filename);
+    animbackfalls = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackfalls), "back-fall animation identifiers", filename);
+    animrises = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animrises), "rise animation identifiers", filename);
+    animbackrises = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackrises), "back-rise animation identifiers", filename);
+    animriseattacks = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animriseattacks), "rise-attack animation identifiers", filename);
+    animbackriseattacks = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackriseattacks), "back-rise-attack animation identifiers", filename);
+    animblkpains = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animblkpains), "block-pain animation identifiers", filename);
+    animbackblkpains = model_constant_array_allocate((size_t)max_attack_types, sizeof(*animbackblkpains), "back-block-pain animation identifiers", filename);
+    animattacks = model_constant_array_allocate((size_t)max_attacks, sizeof(*animattacks), "attack animation identifiers", filename);
+    animfollows = model_constant_array_allocate((size_t)max_follows, sizeof(*animfollows), "follow animation identifiers", filename);
+    animspecials = model_constant_array_allocate((size_t)max_freespecials, sizeof(*animspecials), "freespecial animation identifiers", filename);
+    ai_attack_choice_capacity = (size_t)max_animations;
+    ai_attack_choices = model_constant_array_allocate(ai_attack_choice_capacity, sizeof(*ai_attack_choices), "AI attack-choice table", filename);
 
     // copy default values and new animation ids
     memcpy(animdowns, downs, sizeof(*animdowns)*MAX_DOWNS);
@@ -21679,7 +22658,7 @@ void pausemenu()
     int pauselector = 0;
     int quit = 0;
     int controlp = 0, i;
-    int newkeys;
+    key_mask_t newkeys;
     s_set_entry *set = levelsets + current_set;
     s_screen *pausebuffer = allocscreen(videomodes.hRes, videomodes.vRes, PIXEL_32);
 
@@ -31739,6 +32718,30 @@ void upper_prepare()
     }
 }
 
+/*
+* Add one animation to the temporary AI attack-choice
+* table. A capacity failure is fatal because continuing
+* would overwrite unrelated memory.
+*/
+static void ai_attack_choice_append(int* choice_count, const int animation)
+{
+    if(!choice_count
+        || *choice_count < 0
+        || !ai_attack_choices
+        || (size_t)*choice_count >= ai_attack_choice_capacity) {
+        borShutdown(
+            1,
+            "AI attack-choice table exceeds its capacity of %zu animations.\n",
+            ai_attack_choice_capacity
+        );
+
+        return;
+    }
+
+    ai_attack_choices[*choice_count] = animation;
+    (*choice_count)++;
+}
+
 void normal_prepare()
 {
     int i, j;
@@ -31796,12 +32799,12 @@ void normal_prepare()
                  check_energy(ENERGY_TYPE_HP, animspecials[i])) &&
                 check_range_target_all(self, target, animspecials[i], 0, 0))
         {
-            atkchoices[found++] = animspecials[i];
+            ai_attack_choice_append(&found, animspecials[i]);
         }
     }
     if((rand32() & 7) < 2)
     {
-        if(found && check_costmove(atkchoices[(rand32() & 0xffff) % found], 1, 0) )
+        if(found && check_costmove(ai_attack_choices[(rand32() & 0xffff) % found], 1, 0) )
         {
             return;
         }
@@ -31834,7 +32837,7 @@ void normal_prepare()
                 // 6 5 4 3 2 1 1 1 1 1 ....
                 for(j = ((5 - i) >= 0 ? (5 - i) : 0); j >= 0; j--)
                 {
-                    atkchoices[found++] = animattacks[i];
+                    ai_attack_choice_append(&found, animattacks[i]);
                 }
             }
         }
@@ -31842,13 +32845,13 @@ void normal_prepare()
         {
             self->takeaction = common_attack_proc;
             set_attacking(self);
-            ent_set_anim(self, atkchoices[special + (rand32() & 0xffff) % (found - special)], 0);
+            ent_set_anim(self, ai_attack_choices[special + (rand32() & 0xffff) % (found - special)], 0);
             return;
         }
     }
 
     // if no attack was picked, just choose a random one from the valid list
-    if(special && check_costmove(atkchoices[(rand32() & 0xffff) % special], 1, 0))
+    if(special && check_costmove(ai_attack_choices[(rand32() & 0xffff) % special], 1, 0))
     {
         return;
     }
@@ -35540,7 +36543,7 @@ int pick_random_attack(entity *target, int testonly)
         {
             for(j = ((5 - i) >= 0 ? (5 - i) : 0) * 3; j >= 0; j--)
             {
-                atkchoices[found++] = animattacks[i];
+                ai_attack_choice_append(&found, animattacks[i]);
             }
         }
     }
@@ -35551,21 +36554,21 @@ int pick_random_attack(entity *target, int testonly)
                  check_energy(ENERGY_TYPE_HP, animspecials[i])) &&
                 (!target || check_range_target_all(self, target, animspecials[i], 0, 0)))
         {
-            atkchoices[found++] = animspecials[i];
+            ai_attack_choice_append(&found, animspecials[i]);
         }
     }
     if( validanim(self, ANI_THROWATTACK) &&
             self->weapent && self->weapent->modeldata.subtype == SUBTYPE_PROJECTILE &&
             (!target || check_range_target_all(self, target, ANI_THROWATTACK, 0, 0) ))
     {
-        atkchoices[found++] = ANI_THROWATTACK;
+        ai_attack_choice_append(&found, ANI_THROWATTACK);
     }
 
     if(testonly)
     {
         if(found)
         {
-            return atkchoices[(rand32() & 0xffff) % found];
+            return ai_attack_choices[(rand32() & 0xffff) % found];
         }
         return -1;
     }
@@ -35577,7 +36580,7 @@ int pick_random_attack(entity *target, int testonly)
         {
             return ANI_JUMPATTACK;
         }
-        atkchoices[found++] = ANI_JUMPATTACK;
+        ai_attack_choice_append(&found, ANI_JUMPATTACK);
     }
     if( validanim(self, ANI_UPPER) &&
             (!target || check_range_target_all(self, target, ANI_UPPER, 0, 0)) )
@@ -35586,12 +36589,12 @@ int pick_random_attack(entity *target, int testonly)
         {
             return ANI_UPPER;
         }
-        atkchoices[found++] = ANI_UPPER;
+        ai_attack_choice_append(&found, ANI_UPPER);
     }
 
     if(found)
     {
-        return atkchoices[(rand32() & 0xffff) % found];
+        return ai_attack_choices[(rand32() & 0xffff) % found];
     }
 
     return -1;
@@ -40402,8 +41405,8 @@ int check_special()
 // Kratus (10-2021) Added new flags to use with another ATTACK# keys as an new alternative
 int player_check_special()
 {
-    u64 thekey = 0;
-    e_key_def player_keys = player[self->playerindex].playkeys;
+    key_mask_t thekey = 0;
+    key_mask_t player_keys = player[self->playerindex].playkeys;
 
     switch (global_config.ajspecial)
     {
@@ -41690,90 +42693,851 @@ int check_costmove(int s, int fs, int jumphack)
 }
 
 /*
-* Check whether the player's most recent 
-* inputs satisfy a command sequence.
+* Caskey, Damon V.
+* 2026-07-17
 *
-* Each sequence entry is a bit mask of 
-* required inputs. A recorded input may 
-* contain additional flags and still match.
+* Record the starting time for every newly pressed
+* command input flag.
 *
-* Returns true if every sequence entry matches, 
-* or false otherwise.
+* Physical and direction-relative flags share the same
+* 64-bit namespace. Using the flag's bit index provides
+* hold timing without a parallel command-history ring.
 */
-static bool match_combo(const e_key_def sequence[], const s_player *acting_player, const uint64_t length) {
-    uint64_t j;  
-    uint64_t step;
+static void command_input_hold_start_update(
+    s_player* acting_player,
+    const key_mask_t pressed_flags,
+    const uint64_t event_time
+) {
+    key_mask_t scan_mask = pressed_flags;
 
-    for(j = 0; j < length; j++) {
-        step = (acting_player->combostep - 1 - j) & SPECIAL_INPUT_INDEX_MASK;
+    while(scan_mask) {
+        const uint64_t input_index =
+            bitmask64_get_lowest_index(scan_mask);
 
-        if(((sequence[length - 1 - j]&acting_player->combokey[step]) ^ sequence[length - 1 - j])) { // if input&combokey == 0 then not good btn
+        const key_mask_t input_flag =
+            bitmask64_from_index(input_index);
+
+        acting_player->command_input_hold_start_time[
+            input_index
+        ] = event_time;
+
+        acting_player->command_input_hold_start_valid |=
+            input_flag;
+
+        /*
+        * A new press begins a new continuous hold. Clear
+        * the automatic-trigger record so time zero can
+        * trigger again for the new hold.
+        */
+        acting_player->command_input_hold_trigger_valid &=
+            ~input_flag;
+
+        scan_mask &= ~input_flag;
+    }
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Collect automatic held-input edges which reach their
+* configured threshold on this logical tick.
+*
+* Thresholds come from the acting entity's configurable
+* special commands. A per-input timestamp prevents a
+* second input refresh during the same tick from emitting
+* the same edge again. Different thresholds for the same
+* input remain independent because each is reached on a
+* different logical tick during one continuous hold.
+*/
+static key_mask_t command_input_hold_trigger_collect(
+    s_player* acting_player,
+    const key_mask_t held_flags,
+    const uint64_t event_time
+) {
+    const entity* acting_entity;
+
+    key_mask_t collected_flags = 0;
+
+    int special_index;
+
+    if(!acting_player || !acting_player->ent) {
+        return 0;
+    }
+
+    acting_entity = acting_player->ent;
+
+    for(special_index = 0;
+        special_index < acting_entity->modeldata.specials_loaded;
+        special_index++) {
+
+        const s_com* special_command =
+            &acting_entity->modeldata.special[special_index];
+
+        int step_index;
+
+        if(special_command->steps <= 0
+            || special_command->steps > MAX_SPECIAL_INPUTS) {
+            continue;
+        }
+
+        for(step_index = 0;
+            step_index < special_command->steps;
+            step_index++) {
+
+            const s_command_input_step* input_step =
+                &special_command->input[step_index];
+
+            key_mask_t scan_mask =
+                input_step->hold_trigger & held_flags;
+
+            while(scan_mask) {
+                const uint64_t input_index =
+                    bitmask64_get_lowest_index(scan_mask);
+
+                const key_mask_t input_flag =
+                    bitmask64_from_index(input_index);
+
+                const uint64_t hold_start_time =
+                    acting_player->command_input_hold_start_time[
+                        input_index
+                    ];
+
+                const bool already_emitted_this_tick =
+                    (acting_player->command_input_hold_trigger_valid
+                        & input_flag)
+                    && acting_player->command_input_hold_trigger_time[
+                        input_index
+                    ] == event_time;
+
+                if((acting_player->command_input_hold_start_valid
+                        & input_flag)
+                    && hold_start_time <= event_time
+                    && event_time - hold_start_time
+                        == input_step->hold_time
+                    && !already_emitted_this_tick) {
+
+                    collected_flags |= input_flag;
+                }
+
+                scan_mask &= ~input_flag;
+            }
+        }
+    }
+
+    /*
+    * Record emitted flags only after scanning every
+    * command. Commands sharing the same input and
+    * threshold deliberately share one history edge.
+    */
+    {
+        key_mask_t scan_mask = collected_flags;
+
+        while(scan_mask) {
+            const uint64_t input_index =
+                bitmask64_get_lowest_index(scan_mask);
+
+            const key_mask_t input_flag =
+                bitmask64_from_index(input_index);
+
+            acting_player->command_input_hold_trigger_time[
+                input_index
+            ] = event_time;
+
+            acting_player->command_input_hold_trigger_valid |=
+                input_flag;
+
+            scan_mask &= ~input_flag;
+        }
+    }
+
+    return collected_flags;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Append one event to a player's command history.
+*/
+static void command_input_history_push(s_player* acting_player, const s_command_input_event* input_event) {
+    
+    acting_player->command_input_history[acting_player->command_input_index] = *input_event;
+
+    acting_player->command_input_index = (acting_player->command_input_index + 1) & SPECIAL_INPUT_INDEX_MASK;
+
+    if(acting_player->command_input_count < MAX_SPECIAL_INPUTS) {
+        acting_player->command_input_count++;
+    }
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Consume the newest press edge from a player's command
+* history.
+*
+* Several hard-coded movement commands consume their
+* triggering press. A combined event may also contain a
+* release or automatic hold edge, so only remove the
+* complete entry when no other edge remains.
+*/
+static void command_input_history_consume_latest_press(
+    s_player* acting_player
+) {
+    s_command_input_event* input_event;
+
+    uint64_t input_index;
+
+    if(!acting_player || !acting_player->command_input_count) {
+        return;
+    }
+
+    input_index =
+        (acting_player->command_input_index - 1)
+        & SPECIAL_INPUT_INDEX_MASK;
+
+    input_event =
+        &acting_player->command_input_history[
+            input_index
+        ];
+
+    input_event->press = 0;
+    input_event->press_chord = 0;
+
+    if(input_event->hold || input_event->release) {
+        return;
+    }
+
+    acting_player->command_input_index = input_index;
+
+    memset(input_event, 0, sizeof(*input_event));
+
+    acting_player->command_input_count--;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Consume selected automatic held-input flags from the
+* event which triggered a configurable command.
+*
+* Other flags remain available when the same history
+* entry also contains a press, release, or another held
+* edge. Empty non-latest entries stay in place so ring
+* order and stored event ages do not need compaction.
+*/
+static void command_input_history_consume_hold_trigger(
+    s_player* acting_player,
+    const uint64_t event_age,
+    const key_mask_t trigger_flags
+) {
+    s_command_input_event* input_event;
+
+    uint64_t input_index;
+
+    if(!acting_player
+        || !trigger_flags
+        || event_age >= acting_player->command_input_count) {
+        return;
+    }
+
+    input_index =
+        (acting_player->command_input_index - event_age - 1)
+        & SPECIAL_INPUT_INDEX_MASK;
+
+    input_event =
+        &acting_player->command_input_history[input_index];
+
+    input_event->hold &= ~trigger_flags;
+
+    if(input_event->press
+        || input_event->hold
+        || input_event->release
+        || event_age) {
+        return;
+    }
+
+    acting_player->command_input_index = input_index;
+
+    memset(input_event, 0, sizeof(*input_event));
+
+    acting_player->command_input_count--;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Read the preceding valid event from a player's
+* command history.
+*/
+static const s_command_input_event* command_input_history_previous(
+    const s_player* acting_player,
+    uint64_t* history_index,
+    uint64_t* remaining_events
+) {
+    if(!*remaining_events) {
+        return NULL;
+    }
+
+    *history_index =
+        (*history_index - 1) & SPECIAL_INPUT_INDEX_MASK;
+
+    (*remaining_events)--;
+
+    return &acting_player->command_input_history[
+        *history_index
+    ];
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Read the preceding press event from a player's
+* command history.
+*
+* Non-press entries are skipped so release and timed
+* hold events can be added without changing legacy
+* hard-coded command behavior.
+*/
+static const s_command_input_event* command_input_history_previous_press(
+    const s_player* acting_player,
+    uint64_t* history_index,
+    uint64_t* remaining_events
+) {
+    const s_command_input_event* input_event;
+
+    while((input_event = command_input_history_previous(
+        acting_player,
+        history_index,
+        remaining_events
+    ))) {
+
+        if(input_event->press) {
+            return input_event;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+* Check whether the player's most recent press
+* events satisfy a hard-coded command sequence.
+*
+* Each sequence entry is a bit mask of required
+* inputs. A recorded press may contain additional
+* flags and still match.
+*
+* Release and timed hold events are deliberately
+* ignored so existing hard-coded commands retain
+* their positive-edge behavior.
+*/
+static bool match_combo(const key_mask_t sequence[], const s_player* acting_player, const uint64_t length) {
+    const s_command_input_event* input_event;
+
+    uint64_t history_index;
+    uint64_t newer_event_time;
+    uint64_t remaining_events;
+    uint64_t sequence_index;
+
+    if(!sequence
+        || !acting_player
+        || !length
+        || length > MAX_SPECIAL_INPUTS) {
+        return false;
+    }
+
+    history_index = acting_player->command_input_index;
+    newer_event_time = _time;
+    remaining_events = acting_player->command_input_count;
+
+    for(sequence_index = length;
+        sequence_index > 0;
+        sequence_index--) {
+
+        const key_mask_t required_press =
+            sequence[sequence_index - 1];
+
+        input_event = command_input_history_previous_press(
+            acting_player,
+            &history_index,
+            &remaining_events
+        );
+
+        if(!input_event
+            || (input_event->press & required_press)
+                != required_press
+            || newer_event_time - input_event->time
+                > global_config.command_time) {
             return false;
         }
+
+        newer_event_time = input_event->time;
     }
 
     return true;
 }
 
+/*
+* Return the grace time used by one configurable command
+* sequence. Commands without an explicit override inherit
+* the engine-wide setting at match time.
+*/
+static uint64_t command_sequence_grace_time_get(
+    const s_com* special_command
+) {
+    assert(special_command);
 
-int check_combo()
-{
-    int i, maxstep = -1, maxkeys = -1, valid = -1;
+    return special_command->sequence_grace_time_override
+        ? special_command->sequence_grace_time
+        : global_config.command_time;
+}
+
+/*
+* Return the longest grace time needed by the acting
+* entity's configurable and hard-coded commands.
+*
+* Input history is shared by every command. Retaining it
+* for the longest configured grace prevents a command
+* with a longer local override from losing its earlier
+* steps to the global history timeout.
+*/
+static uint64_t command_input_history_grace_time_get(
+    const entity* acting_entity
+) {
+    uint64_t history_grace_time = global_config.command_time;
+
+    int special_index;
+
+    if(!acting_entity) {
+        return history_grace_time;
+    }
+
+    for(special_index = 0;
+        special_index < acting_entity->modeldata.specials_loaded;
+        special_index++) {
+
+        const s_com* special_command =
+            &acting_entity->modeldata.special[special_index];
+
+        const uint64_t sequence_grace_time =
+            command_sequence_grace_time_get(special_command);
+
+        if(sequence_grace_time > history_grace_time) {
+            history_grace_time = sequence_grace_time;
+        }
+    }
+
+    return history_grace_time;
+}
+
+/*
+* Return the absolute logical tick when shared command
+* history expires. Saturation preserves extremely large
+* creator-defined grace values without wrapping the
+* expiration time around to the beginning of the clock.
+*/
+static uint64_t command_input_history_expiration_time_get(
+    const entity* acting_entity,
+    const uint64_t event_time
+) {
+    const uint64_t history_grace_time =
+        command_input_history_grace_time_get(acting_entity);
+
+    if(history_grace_time > UINT64_MAX - event_time) {
+        return UINT64_MAX;
+    }
+
+    return event_time + history_grace_time;
+}
+
+/*
+* Return whether an input event satisfies the positive
+* edge requirement for one configurable command step.
+*
+* Single-key steps retain exact legacy behavior and use
+* only the physical press edge. Multi-key steps use the
+* chord snapshot and their configured chord_time. Zero
+* requires every member to begin on the same logical tick.
+* At least one required key must be physically pressed in
+* the triggering event, preventing an unrelated third key
+* from retriggering a chord which merely remains held.
+*/
+static bool command_input_event_matches_press(
+    const s_command_input_step* input_step,
+    const s_command_input_event* input_event,
+    const s_player* acting_player
+) {
+    const key_mask_t required_press = input_step->press;
+
+    key_mask_t scan_mask;
+
+    if(!required_press) {
+        return true;
+    }
+
+    /*
+    * A mask with one active bit has no second bit after
+    * removing its lowest bit.
+    */
+    if(!(required_press & (required_press - 1))) {
+        return (input_event->press & required_press)
+            == required_press;
+    }
+
+    if(!(input_event->press & required_press)
+        || (input_event->press_chord & required_press)
+            != required_press) {
+        return false;
+    }
+
+    scan_mask = required_press;
+
+    while(scan_mask) {
+        const uint64_t input_index =
+            bitmask64_get_lowest_index(scan_mask);
+
+        const key_mask_t input_flag =
+            bitmask64_from_index(input_index);
+
+        const uint64_t press_time =
+            acting_player->command_input_hold_start_time[
+                input_index
+            ];
+
+        if(!(acting_player->command_input_hold_start_valid
+                & input_flag)
+            || press_time > input_event->time
+            || input_event->time - press_time
+                > input_step->chord_time) {
+            return false;
+        }
+
+        scan_mask &= ~input_flag;
+    }
+
+    return true;
+}
+
+/*
+* Return whether an input event satisfies every passive
+* and automatic held requirement for one command step.
+*/
+static bool command_input_event_matches_hold(
+    const s_command_input_step* input_step,
+    const s_command_input_event* input_event,
+    const s_player* acting_player
+) {
+    const key_mask_t required_hold_flags =
+        input_step->hold | input_step->hold_trigger;
+
+    key_mask_t scan_mask;
+
+    if(!required_hold_flags) {
+        return true;
+    }
+
+    if((input_event->held & required_hold_flags)
+        != required_hold_flags) {
+        return false;
+    }
+
+    scan_mask = required_hold_flags;
+
+    while(scan_mask) {
+        const uint64_t input_index =
+            bitmask64_get_lowest_index(scan_mask);
+
+        const key_mask_t input_flag =
+            bitmask64_from_index(input_index);
+
+        const uint64_t hold_start_time =
+            acting_player->command_input_hold_start_time[
+                input_index
+            ];
+
+        if(!(acting_player->command_input_hold_start_valid
+                & input_flag)
+            || hold_start_time > input_event->time) {
+            return false;
+        }
+
+        {
+            const uint64_t held_time =
+                input_event->time - hold_start_time;
+
+            /*
+            * Passive holds accept the inclusive minimum
+            * through the optional inclusive maximum. A
+            * zero maximum leaves the upper bound open.
+            * Automatic holds match only their exact
+            * minimum threshold edge, preventing a later
+            * threshold for the same key from retriggering
+            * an earlier automatic command.
+            */
+            if(((input_step->hold & input_flag)
+                    && (held_time < input_step->hold_time
+                        || (input_step->hold_time_maximum
+                            && held_time
+                                > input_step->hold_time_maximum)))
+                || ((input_step->hold_trigger & input_flag)
+                    && held_time != input_step->hold_time)) {
+                return false;
+            }
+        }
+
+        scan_mask &= ~input_flag;
+    }
+
+    return true;
+}
+
+/*
+* Read the preceding event whose edge type is relevant
+* to a configurable command step.
+*
+* Release-only events do not disturb press-only steps,
+* and press-only events do not disturb release-only
+* steps. An event of a required type with the wrong key
+* is returned so it correctly interrupts the sequence.
+*/
+static const s_command_input_event* command_input_history_previous_for_step(
+    const s_player* acting_player,
+    const s_command_input_step* input_step,
+    uint64_t* history_index,
+    uint64_t* remaining_events
+) {
+    const s_command_input_event* input_event;
+
+    while((input_event = command_input_history_previous(
+        acting_player,
+        history_index,
+        remaining_events
+    ))) {
+
+        if((input_step->press && input_event->press)
+            || (input_step->release && input_event->release)
+            || (input_step->hold_trigger && input_event->hold)) {
+            return input_event;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+* Check whether the player's most recent input events
+* satisfy a configurable special command.
+*
+* Press, release, and automatic hold masks are edge
+* requirements. Passive hold is a state and minimum
+* duration requirement evaluated at the triggering event.
+*/
+static bool match_special_command(
+    const s_command_input_step sequence[],
+    const s_player* acting_player,
+    const uint64_t length,
+    const uint64_t sequence_grace_time,
+    uint64_t* match_time,
+    uint64_t* match_age
+) {
+    const s_command_input_event* input_event;
+
+    uint64_t history_index;
+    uint64_t newer_event_time;
+    uint64_t remaining_events;
+    uint64_t sequence_index;
+
+    if(!sequence
+        || !acting_player
+        || !match_time
+        || !match_age
+        || !length
+        || length > MAX_SPECIAL_INPUTS) {
+        return false;
+    }
+
+    *match_time = 0;
+    *match_age = UINT64_MAX;
+
+    history_index = acting_player->command_input_index;
+    newer_event_time = _time;
+    remaining_events = acting_player->command_input_count;
+
+    for(sequence_index = length;
+        sequence_index > 0;
+        sequence_index--) {
+
+        const s_command_input_step* input_step =
+            &sequence[sequence_index - 1];
+
+        input_event = command_input_history_previous_for_step(
+            acting_player,
+            input_step,
+            &history_index,
+            &remaining_events
+        );
+
+        if(!input_event
+            || !command_input_event_matches_press(
+                input_step,
+                input_event,
+                acting_player
+            )
+            || (input_event->release & input_step->release)
+                != input_step->release
+            || (input_event->hold & input_step->hold_trigger)
+                != input_step->hold_trigger
+            || newer_event_time - input_event->time
+                > sequence_grace_time
+            || !command_input_event_matches_hold(
+                input_step,
+                input_event,
+                acting_player
+            )) {
+            return false;
+        }
+
+        if(sequence_index == length) {
+            *match_time = input_event->time;
+            *match_age =
+                acting_player->command_input_count
+                - remaining_events - 1;
+        }
+
+        newer_event_time = input_event->time;
+    }
+
+    return true;
+}
+
+bool check_combo(s_player* acting_player) {
+
+    unsigned int i;
+    int maxstep = -1;
+    int maxkeys = -1;
+    int valid = -1;
+
+    uint64_t min_match_age = UINT64_MAX;
+    uint64_t max_match_time = 0;
+    key_mask_t selected_hold_trigger_flags = 0;
+
+    bool match_found = false;
+
     s_com *com;
-    s_player *p;
 
-    p = player + self->playerindex;
+    for(i = 0; i < self->modeldata.specials_loaded; i++) {
 
-    for(i = 0; i < self->modeldata.specials_loaded; i++)
-    {
         com = self->modeldata.special + i;
 
         if(self->animation->cancel != ANIMATION_CANCEL_DISABLED &&
                 (self->animnum != com->cancel ||
                  com->frame.min > self->animpos ||
                  com->frame.max < self->animpos ||
-                 self->animation->hit_count < com->hits))
-        {
+                 self->animation->hit_count < com->hits)) {
+         
             continue;
-        }
-        else if(self->animation->cancel == ANIMATION_CANCEL_DISABLED &&
-                (com->cancel || !self->idling || diff(self->position.y, self->base) > 1) )
-        {
+        
+        } else if(self->animation->cancel == ANIMATION_CANCEL_DISABLED
+            && (com->cancel || !player_accepts_idle_input(self) || diff(self->position.y, self->base) > 1)) {
+            
             continue;
         }
 
-        // find the longest possible combo with more keys pressed concurrently
-        if( com->steps >= maxstep && com->numkeys > maxkeys &&
-                validanim(self, com->anim) &&
-                (check_energy(ENERGY_TYPE_MP, com->anim) || check_energy(ENERGY_TYPE_HP, com->anim)) &&
-                match_combo(com->input, p, com->steps))
         {
-            // combo valid! but which better? The longest combo that has with more keys pressed concurrently
-            valid = com->anim;
-            maxstep = com->steps;
-            maxkeys = com->numkeys;
-        }
-    }//end of for
+            uint64_t command_match_age;
+            uint64_t command_match_time;
 
-    if(valid >= 0 && check_costmove(valid, 1, self->jumping))
-    {
-        return 1;
+            const uint64_t sequence_grace_time =
+                command_sequence_grace_time_get(com);
+
+            if(validanim(self, com->anim)
+            && (check_energy(ENERGY_TYPE_MP, com->anim) || check_energy(ENERGY_TYPE_HP, com->anim))
+            && match_special_command(
+                com->input,
+                acting_player,
+                com->steps,
+                sequence_grace_time,
+                &command_match_time,
+                &command_match_age
+            )) {
+
+                /*
+                * Prefer the command triggered by the newest
+                * input event. Ring age resolves events recorded
+                * during the same logical tick. Commands sharing
+                * that event retain the existing longest-sequence,
+                * then greatest-chord-size ranking.
+                */
+                const bool better_match =
+                    !match_found
+                    || command_match_age < min_match_age
+                    || (command_match_age == min_match_age
+                        && (command_match_time > max_match_time
+                            || (command_match_time == max_match_time
+                                && (com->steps > maxstep
+                                    || (com->steps == maxstep
+                                        && com->numkeys > maxkeys)))));
+
+                if(!better_match) {
+                    continue;
+                }
+
+                valid = com->anim;
+                min_match_age = command_match_age;
+                max_match_time = command_match_time;
+                maxstep = com->steps;
+                maxkeys = com->numkeys;
+                selected_hold_trigger_flags =
+                    com->input[com->steps - 1].hold_trigger;
+                match_found = true;
+            }
+        }
+
     }
 
-    return 0;
+    if(valid >= 0 && check_costmove(valid, 1, self->jumping)) {
+        /*
+        * Automatic held edges are one-shot input events.
+        * Consume the selected final-step flags only after
+        * the move starts successfully. Press, release,
+        * and unrelated automatic flags remain available.
+        */
+        command_input_history_consume_hold_trigger(
+            acting_player,
+            min_match_age,
+            selected_hold_trigger_flags
+        );
+
+        return true;
+    }
+
+    return false;
 }
 
-int player_preinput()
-{
-    if(player[self->playerindex].playkeys)
-    {
-        if(check_combo())
-        {
-            player[self->playerindex].playkeys &= ~FLAG_CONTROLKEYS;
-            return 1;
-        }
+/*
+* Caskey, Damon V.
+* 2026-07-26 - Originally written by Fugue (unknown date).
+*
+* Rework evaluates whether a player 
+* has a pending command sequence to execute.
+*/
+bool player_preinput() {
+    
+    s_player *acting_player = player + self->playerindex;
+
+    if(check_combo(acting_player)) {
+        acting_player->playkeys &= ~FLAG_CONTROLKEYS;
+
+        return true;
     }
-    return 0;
+
+    return false;
 }
 
 
@@ -41879,7 +43643,32 @@ void run_try_runstop_player(entity* acting_entity, const s_player* acting_player
     }
 }
 
+/*
+* Caskey, Damon V.
+* 2026-07-16
+*
+* Return true when the entity may 
+* process ordinary idle-state player 
+* input.
+*/
+bool player_accepts_idle_input(const entity *acting_entity) {
+    
+    const s_anim *animation = acting_entity->animation;
 
+    if(acting_entity->idling) {
+        return true;
+    }
+
+    if(!animation
+        || !animation->idle
+        || animation->numframes <= 0
+        || acting_entity->animpos
+            >= (uint64_t)animation->numframes) {
+        return false;
+    }
+
+    return animation->idle[acting_entity->animpos] ? true : false;
+}
 
 void player_think()
 {
@@ -41900,10 +43689,10 @@ void player_think()
 
     entity* acting_entity = self;
 
-    const e_key_def sequence_left_left[] = {FLAG_MOVELEFT, FLAG_MOVELEFT};
-    const e_key_def sequence_right_right[] = {FLAG_MOVERIGHT, FLAG_MOVERIGHT};
-    const e_key_def sequence_up_up[] = {FLAG_MOVEUP, FLAG_MOVEUP};
-    const e_key_def sequence_down_down[] = {FLAG_MOVEDOWN, FLAG_MOVEDOWN};  
+    const key_mask_t sequence_left_left[] = {FLAG_MOVELEFT, FLAG_MOVELEFT};
+    const key_mask_t sequence_right_right[] = {FLAG_MOVERIGHT, FLAG_MOVERIGHT};
+    const key_mask_t sequence_up_up[] = {FLAG_MOVEUP, FLAG_MOVEUP};
+    const key_mask_t sequence_down_down[] = {FLAG_MOVEDOWN, FLAG_MOVEDOWN};  
     
     int pli = acting_entity->playerindex;
     s_player *acting_player = player + pli;
@@ -42000,8 +43789,12 @@ void player_think()
         goto endthinkcheck;
     }
 
-    // cant do anything if busy
-    if(!acting_entity->idling && !(acting_entity->animation->idle && acting_entity->animation->idle[acting_entity->animpos])) {
+    /*
+    * Check if player is in a state that allows
+    * ordinary idle-state input processing. If not,
+    * skip the rest of the input checks.
+    */
+    if(!player_accepts_idle_input(acting_entity)) {
         goto endthinkcheck;
     }
 
@@ -42025,7 +43818,7 @@ void player_think()
 
         if(command_match && (acting_entity->modeldata.run_config_flags & (RUN_CONFIG_Z_UP_ENABLED | RUN_CONFIG_Z_UP_INITIAL)) == (RUN_CONFIG_Z_UP_ENABLED | RUN_CONFIG_Z_UP_INITIAL) && validanim(acting_entity, ANI_RUN)) {
             acting_player->playkeys &= ~FLAG_MOVEUP;
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             acting_entity->running |= RUN_STATE_START_X;    // Player begins to run
         
         } else if(command_match && validanim(acting_entity, ANI_ATTACKUP)) {
@@ -42037,7 +43830,7 @@ void player_think()
             acting_entity->combostep[0] = 0;
             acting_entity->velocity.x = acting_entity->velocity.z = 0;
             ent_set_anim(acting_entity, ANI_ATTACKUP, 0);
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK; // this workaround deals default freespecial2
+            command_input_history_consume_latest_press(acting_player); // this workaround deals default freespecial2
             goto endthinkcheck;
         
         } else if(command_match && validanim(acting_entity, ANI_DODGE)) {
@@ -42049,7 +43842,7 @@ void player_think()
             acting_entity->velocity.z = -acting_entity->modeldata.speed.x * 1.75;
             acting_entity->velocity.x = 0;// OK you can use jumpframe to modify this anyway
             ent_set_anim(acting_entity, ANI_DODGE, 0);
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             goto endthinkcheck;
         }
     }
@@ -42059,7 +43852,7 @@ void player_think()
 
         if(command_match && (acting_entity->modeldata.run_config_flags & (RUN_CONFIG_Z_DOWN_ENABLED | RUN_CONFIG_Z_DOWN_INITIAL)) == (RUN_CONFIG_Z_DOWN_ENABLED | RUN_CONFIG_Z_DOWN_INITIAL) && validanim(acting_entity, ANI_RUN)) {
             acting_player->playkeys &= ~FLAG_MOVEDOWN;
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             acting_entity->running |= RUN_STATE_START_Z;    // Player begins to run
         
         } else if(command_match && validanim(acting_entity, ANI_ATTACKDOWN)) {
@@ -42070,7 +43863,7 @@ void player_think()
             acting_entity->velocity.x = acting_entity->velocity.z = 0;
             acting_entity->combostep[0] = 0;
             ent_set_anim(acting_entity, ANI_ATTACKDOWN, 0);
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             goto endthinkcheck;
         
         } else if(command_match && validanim(acting_entity, ANI_DODGE)) {
@@ -42082,7 +43875,7 @@ void player_think()
             acting_entity->velocity.z = acting_entity->modeldata.speed.x * 1.75;
             acting_entity->velocity.x = 0;
             ent_set_anim(acting_entity, ANI_DODGE, 0);
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             goto endthinkcheck;
         }
     }
@@ -42100,18 +43893,18 @@ void player_think()
         if (command_match_left && (acting_entity->modeldata.run_config_flags & (RUN_CONFIG_X_LEFT_ENABLED | RUN_CONFIG_X_LEFT_INITIAL)) == (RUN_CONFIG_X_LEFT_ENABLED | RUN_CONFIG_X_LEFT_INITIAL) && validanim(acting_entity, ANI_RUN)) {
 
             acting_player->playkeys &= ~(FLAG_MOVELEFT | FLAG_MOVERIGHT); // usually left + right is not acceptable, so it is OK to null both
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             acting_entity->running |= RUN_STATE_START_X;    // Player begins to run
         
         } else if(command_match_right && (acting_entity->modeldata.run_config_flags & (RUN_CONFIG_X_RIGHT_ENABLED | RUN_CONFIG_X_RIGHT_INITIAL)) == (RUN_CONFIG_X_RIGHT_ENABLED | RUN_CONFIG_X_RIGHT_INITIAL) && validanim(acting_entity, ANI_RUN)) {
             
             acting_player->playkeys &= ~(FLAG_MOVELEFT | FLAG_MOVERIGHT); // usually left + right is not acceptable, so it is OK to null both
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             acting_entity->running |= RUN_STATE_START_X;    // Player begins to run
         
         } else if(command_match_back && validanim(acting_entity, ANI_BACKRUN)) {
             acting_player->playkeys &= ~(FLAG_MOVELEFT | FLAG_MOVERIGHT); // usually left + right is not acceptable, so it is OK to null both
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             acting_entity->running |= RUN_STATE_START_X;    // Player begins to run
         
         } else if(command_match_forward && validanim(acting_entity, ANI_ATTACKFORWARD)) {
@@ -42121,7 +43914,7 @@ void player_think()
             acting_entity->velocity.x = acting_entity->velocity.z = 0;
             acting_entity->combostep[0] = 0;
             ent_set_anim(acting_entity, ANI_ATTACKFORWARD, 0);
-            acting_player->combostep = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
+            command_input_history_consume_latest_press(acting_player);
             goto endthinkcheck;
         }
     }
@@ -42280,32 +44073,57 @@ void player_think()
         * the back attack sequence, we'll attempt to do 
         * a back attack.
         */
-        const e_key_def sequence_back_attack[] = {FLAG_BACKWARD, FLAG_ATTACK};
+        const key_mask_t sequence_back_attack[] = {FLAG_BACKWARD, FLAG_ATTACK};
 
         if(validanim(acting_entity, ANI_ATTACKBACKWARD) && match_combo(sequence_back_attack, acting_player, 2)) {
-            
+            const s_command_input_event* attack_input_event;
+            const s_command_input_event* backward_input_event;
+
+            uint64_t history_index =
+                acting_player->command_input_index;
+
+            uint64_t remaining_events =
+                acting_player->command_input_count;
+
             /*
-            * Get the last two indexes of the input buffer.
+            * Get the last two press events. Reading through
+            * the compatibility helper prevents future release
+            * and timed hold events from disturbing back attack.
             */
-            const uint64_t attack_input_index = (acting_player->combostep - 1) & SPECIAL_INPUT_INDEX_MASK;
-            const uint64_t backward_input_index = (acting_player->combostep - 2) & SPECIAL_INPUT_INDEX_MASK;
+            attack_input_event = command_input_history_previous_press(
+                acting_player,
+                &history_index,
+                &remaining_events
+            );
+
+            backward_input_event = command_input_history_previous_press(
+                acting_player,
+                &history_index,
+                &remaining_events
+            );
 
             /*
             * Did back attack inputs come within the
             * time window? If so, we'll do a back attack.
             */
-            if(acting_player->inputtime[attack_input_index] - acting_player->inputtime[backward_input_index] < global_config.game_speed / 10) {
+            if(attack_input_event
+                && backward_input_event
+                && attack_input_event->time
+                    - backward_input_event->time
+                    < global_config.game_speed / 10) {
 
                 acting_entity->takeaction = common_attack_proc;
                 set_attacking(acting_entity);
                 acting_entity->velocity.x = 0;
                 acting_entity->velocity.z = 0;
 
-                if(acting_entity->direction == DIRECTION_LEFT  && (acting_player->combokey[backward_input_index] & FLAG_MOVELEFT)) {
+                if(acting_entity->direction == DIRECTION_LEFT
+                    && (backward_input_event->press & FLAG_MOVELEFT)) {
                 
                     acting_entity->direction = DIRECTION_RIGHT;
                 
-                } else if(acting_entity->direction == DIRECTION_RIGHT && (acting_player->combokey[backward_input_index] & FLAG_MOVERIGHT)) {
+                } else if(acting_entity->direction == DIRECTION_RIGHT
+                    && (backward_input_event->press & FLAG_MOVERIGHT)) {
                     acting_entity->direction = DIRECTION_LEFT;
                 }
 
@@ -44952,9 +46770,28 @@ void spawnplayer(int index)
         player[index].ent->rush.max = 0;
     }
 
-    memset(player[index].combokey, 0, sizeof(*player[index].combokey)*MAX_SPECIAL_INPUTS);
-    memset(player[index].inputtime, 0, sizeof(*player[index].inputtime)*MAX_SPECIAL_INPUTS);
-    player[index].combostep = 0;
+    memset(
+        player[index].command_input_history,
+        0,
+        sizeof(player[index].command_input_history)
+    );
+
+    memset(
+        player[index].command_input_hold_start_time,
+        0,
+        sizeof(player[index].command_input_hold_start_time)
+    );
+
+    memset(
+        player[index].command_input_hold_trigger_time,
+        0,
+        sizeof(player[index].command_input_hold_trigger_time)
+    );
+
+    player[index].command_input_hold_start_valid = 0;
+    player[index].command_input_hold_trigger_valid = 0;
+    player[index].command_input_count = 0;
+    player[index].command_input_index = 0;
 
     if(player[index].spawnhealth)
     {
@@ -45957,11 +47794,53 @@ void execute_input_scripts(int player_index)
 	}
 }
 
-void inputrefresh(int playrecmode)
-{
+/*
+* Caskey, Damon V.
+* 2026-07-17
+*
+* Add direction-relative command flags to a physical
+* input mask.
+*
+* Left and right remain in the result so hard-coded
+* commands can continue to inspect the physical input.
+*/
+static key_mask_t command_input_resolve_direction(
+    const key_mask_t input_flags,
+    const entity* acting_entity
+) {
+    key_mask_t resolved_flags = input_flags;
+
+    if(!acting_entity) {
+        return resolved_flags;
+    }
+
+    if(input_flags & FLAG_MOVELEFT) {
+        resolved_flags |= acting_entity->direction
+            ? FLAG_BACKWARD
+            : FLAG_FORWARD;
+
+    } else if(input_flags & FLAG_MOVERIGHT) {
+        resolved_flags |= acting_entity->direction
+            ? FLAG_FORWARD
+            : FLAG_BACKWARD;
+    }
+
+    return resolved_flags;
+}
+
+/*
+* Caskey, Damon V.
+* 2026-07-17 - Orginal by Utunnels, unknow date.
+*
+* Update the input state for each player. This includes
+* physical keys, command input history, and automatic
+* held edges. Refactored to support direction-relative 
+* command flags and extensible command system.
+*/
+void inputrefresh(int playrecmode) {
+
     int p;
     s_player *acting_player;
-    uint64_t key;
 
     control_update(playercontrolpointers, MAX_PLAYERS);
 
@@ -46000,49 +47879,97 @@ void inputrefresh(int playrecmode)
         * too long ago.
         */
         if(acting_player->ent && acting_player->ent->command_time < _time) {
-            memset(acting_player->combokey, 0, sizeof(*acting_player->combokey)*MAX_SPECIAL_INPUTS);
-            memset(acting_player->inputtime, 0, sizeof(*acting_player->inputtime)*MAX_SPECIAL_INPUTS);
-            acting_player->combostep = 0;
+            memset(
+                acting_player->command_input_history,
+                0,
+                sizeof(acting_player->command_input_history)
+            );
+
+            acting_player->command_input_count = 0;
+            acting_player->command_input_index = 0;
         }
 
         /*
-        * Reset the command sequence and timestamp if new 
-        * keys are pressed.
+        * Build one event every refresh so automatic held
+        * thresholds can create an edge without a physical
+        * button change. Store it only when at least one
+        * press, release, or automatic held edge exists.
         */
+        {
+            s_command_input_event input_event = {0};
 
-        if(acting_player->newkeys) {			
-            
-            key = acting_player->newkeys;
-            
+            input_event.press = command_input_resolve_direction(
+                acting_player->newkeys,
+                acting_player->ent
+            );
+
+            input_event.release = command_input_resolve_direction(
+                acting_player->releasekeys,
+                acting_player->ent
+            );
+
             /*
-            * Player has an entity, so we can reset
-            * the command time and use the entity's 
-            * direction to determine the direction of 
-            * the player and set the forward/backward 
-            * flags accordingly.
+            * Released keys were held immediately before this
+            * edge. Include them in the event snapshot so a
+            * command such as a[50] + ~a can test both facts.
             */
+            input_event.held = command_input_resolve_direction(
+                acting_player->keys
+                    | acting_player->releasekeys,
+                acting_player->ent
+            );
 
-            if(acting_player->ent) {
-                acting_player->ent->command_time = _time + global_config.command_time;
-                
-                if(key & FLAG_MOVELEFT) {
-                    key |= acting_player->ent->direction ? FLAG_BACKWARD : FLAG_FORWARD;                
-                } else if(key & FLAG_MOVERIGHT) {
-                    key |= acting_player->ent->direction ? FLAG_FORWARD : FLAG_BACKWARD;
+            input_event.time = _time;
+
+            command_input_hold_start_update(
+                acting_player,
+                input_event.press,
+                input_event.time
+            );
+
+            if(input_event.press) {
+                /*
+                * Capture inputs still held at this positive
+                * edge. The configurable command matcher
+                * applies each step's chord_time to their
+                * recorded press times. Hard-coded commands
+                * continue to inspect input_event.press only.
+                */
+                input_event.press_chord =
+                    command_input_resolve_direction(
+                        acting_player->keys,
+                        acting_player->ent
+                    );
+            }
+
+            input_event.hold =
+                command_input_hold_trigger_collect(
+                    acting_player,
+                    input_event.held,
+                    input_event.time
+                );
+
+            if(input_event.press
+                || input_event.hold
+                || input_event.release) {
+
+                input_event.ticks = timer_gettick();
+                command_input_history_push(acting_player, &input_event);
+
+                if(acting_player->ent) {
+                    acting_player->ent->command_time =
+                        command_input_history_expiration_time_get(
+                            acting_player->ent,
+                            input_event.time
+                        );
                 }
             }
-            
-            /*
-            * Update the command ring buffer with the new 
-            * key and timestamp.
-            */
-            acting_player->inputtime[acting_player->combostep] = _time;
-            acting_player->combokey[acting_player->combostep] = key;
-            acting_player->combostep = (acting_player->combostep + 1) & SPECIAL_INPUT_INDEX_MASK;
+
         }
 
         bothkeys |= acting_player->keys;
         bothnewkeys |= acting_player->newkeys;
+        
     }
 
 }
