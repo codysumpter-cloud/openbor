@@ -16,6 +16,7 @@
 #include "audio.h"
 #include "axis.h"
 #include "binding.h"
+#include "command_input.h"
 #include "datetime.h"
 #include "drawmethod.h"
 #include "colorset.h"
@@ -476,6 +477,7 @@ enum systemvariant_enum
     SYSTEM_PROPERTY_PLAYER2,
     SYSTEM_PROPERTY_PLAYER3,
     SYSTEM_PROPERTY_PLAYER4,
+    SYSTEM_PROPERTY_PLAYER_COLLECTION,
     SYSTEM_PROPERTY_PLAYER_MAX_Z,
     SYSTEM_PROPERTY_PLAYER_MIN_Z,
     SYSTEM_PROPERTY_PORTING,
