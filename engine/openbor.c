@@ -381,35 +381,35 @@ int                 max_attacks         = MAX_ATTACKS;
 int                 max_animations      = MAX_ANIS;
 
 // -------dynamic animation indexes-------
-e_animations	*animdowns           = NULL;
-e_animations    *animups             = NULL;
-e_animations    *animbackwalks       = NULL;
-e_animations	*animwalks           = NULL;
-e_animations    *animidles           = NULL;
-e_animations    *animpains           = NULL;
-e_animations    *animbackpains       = NULL;
-e_animations    *animdies            = NULL;
-e_animations    *animbackdies        = NULL;
-e_animations    *animfalls           = NULL;
-e_animations    *animbackfalls       = NULL;
-e_animations    *animrises           = NULL;
-e_animations    *animbackrises       = NULL;
-e_animations    *animriseattacks     = NULL;
-e_animations    *animbackriseattacks = NULL;
-e_animations    *animblkpains        = NULL;
-e_animations    *animbackblkpains    = NULL;
-e_animations    *animattacks         = NULL;
-e_animations    *animfollows         = NULL;
-e_animations    *animspecials        = NULL;
+animation_id_t  *animdowns           = NULL;
+animation_id_t  *animups             = NULL;
+animation_id_t  *animbackwalks       = NULL;
+animation_id_t  *animwalks           = NULL;
+animation_id_t  *animidles           = NULL;
+animation_id_t  *animpains           = NULL;
+animation_id_t  *animbackpains       = NULL;
+animation_id_t  *animdies            = NULL;
+animation_id_t  *animbackdies        = NULL;
+animation_id_t  *animfalls           = NULL;
+animation_id_t  *animbackfalls       = NULL;
+animation_id_t  *animrises           = NULL;
+animation_id_t  *animbackrises       = NULL;
+animation_id_t  *animriseattacks     = NULL;
+animation_id_t  *animbackriseattacks = NULL;
+animation_id_t  *animblkpains        = NULL;
+animation_id_t  *animbackblkpains    = NULL;
+animation_id_t  *animattacks         = NULL;
+animation_id_t  *animfollows         = NULL;
+animation_id_t  *animspecials        = NULL;
 
 // system default values
-int                 downs[MAX_DOWNS]        = {ANI_DOWN};
-int                 ups[MAX_UPS]            = {ANI_UP};
-int                 backwalks[MAX_BACKWALKS] = {ANI_BACKWALK};
-int                 walks[MAX_WALKS]        = {ANI_WALK};
-int                 idles[MAX_IDLES]        = {ANI_IDLE};
+animation_id_t      downs[MAX_DOWNS]         = {ANI_DOWN};
+animation_id_t      ups[MAX_UPS]             = {ANI_UP};
+animation_id_t      backwalks[MAX_BACKWALKS] = {ANI_BACKWALK};
+animation_id_t      walks[MAX_WALKS]         = {ANI_WALK};
+animation_id_t      idles[MAX_IDLES]         = {ANI_IDLE};
 
-int                 falls[MAX_ATKS] =
+animation_id_t      falls[MAX_ATKS] =
 {
     ANI_FALL,       // ATK_NORMAL
     ANI_FALL2,      // ATK_NORMAL2
@@ -437,7 +437,7 @@ int                 falls[MAX_ATKS] =
     ANI_FALL        // ATK_TIMEOVER
 };
 
-int                 backfalls[MAX_ATKS] =
+animation_id_t      backfalls[MAX_ATKS] =
 {
     ANI_BACKFALL,  ANI_BACKFALL2, ANI_BACKFALL3,  ANI_BACKFALL4,
     ANI_BACKFALL,  ANI_BACKBURN,  ANI_BACKFALL,   ANI_BACKSHOCK,
@@ -447,7 +447,7 @@ int                 backfalls[MAX_ATKS] =
     ANI_BACKFALL,  ANI_BACKFALL,  ANI_BACKFALL,   ANI_BACKFALL
 };
 
-int                 rises[MAX_ATKS] =
+animation_id_t      rises[MAX_ATKS] =
 {
     ANI_RISE,  ANI_RISE2, ANI_RISE3,  ANI_RISE4,
     ANI_RISE,  ANI_RISEB,  ANI_RISE,  ANI_RISES,
@@ -457,7 +457,7 @@ int                 rises[MAX_ATKS] =
     ANI_RISE,  ANI_RISE,  ANI_RISE,   ANI_RISE
 };
 
-int                 backrises[MAX_ATKS] =
+animation_id_t      backrises[MAX_ATKS] =
 {
     ANI_BACKRISE,  ANI_BACKRISE2, ANI_BACKRISE3,  ANI_BACKRISE4,
     ANI_BACKRISE,  ANI_BACKRISEB, ANI_BACKRISE,   ANI_BACKRISES,
@@ -467,7 +467,7 @@ int                 backrises[MAX_ATKS] =
     ANI_BACKRISE,  ANI_BACKRISE,  ANI_BACKRISE,   ANI_BACKRISE
 };
 
-int                 riseattacks[MAX_ATKS] =
+animation_id_t      riseattacks[MAX_ATKS] =
 {
     ANI_RISEATTACK,  ANI_RISEATTACK2, ANI_RISEATTACK3,  ANI_RISEATTACK4,
     ANI_RISEATTACK,  ANI_RISEATTACKB, ANI_RISEATTACK,   ANI_RISEATTACKS,
@@ -477,7 +477,7 @@ int                 riseattacks[MAX_ATKS] =
     ANI_RISEATTACK,  ANI_RISEATTACK,  ANI_RISEATTACK,   ANI_RISEATTACK
 };
 
-int                 backriseattacks[MAX_ATKS] =
+animation_id_t      backriseattacks[MAX_ATKS] =
 {
     ANI_BACKRISEATTACK,  ANI_BACKRISEATTACK2, ANI_BACKRISEATTACK3,  ANI_BACKRISEATTACK4,
     ANI_BACKRISEATTACK,  ANI_BACKRISEATTACKB, ANI_BACKRISEATTACK,   ANI_BACKRISEATTACKS,
@@ -487,7 +487,7 @@ int                 backriseattacks[MAX_ATKS] =
     ANI_BACKRISEATTACK,  ANI_BACKRISEATTACK,  ANI_BACKRISEATTACK,   ANI_BACKRISEATTACK
 };
 
-int                 pains[MAX_ATKS] =
+animation_id_t      pains[MAX_ATKS] =
 {
     ANI_PAIN,  ANI_PAIN2,    ANI_PAIN3,  ANI_PAIN4,
     ANI_PAIN,  ANI_BURNPAIN, ANI_PAIN,   ANI_SHOCKPAIN,
@@ -497,7 +497,7 @@ int                 pains[MAX_ATKS] =
     ANI_PAIN,  ANI_PAIN,     ANI_PAIN,   ANI_PAIN
 };
 
-int                 backpains[MAX_ATKS] =
+animation_id_t      backpains[MAX_ATKS] =
 {
     ANI_BACKPAIN,  ANI_BACKPAIN2,    ANI_BACKPAIN3,  ANI_BACKPAIN4,
     ANI_BACKPAIN,  ANI_BACKBURNPAIN, ANI_BACKPAIN,   ANI_BACKSHOCKPAIN,
@@ -507,7 +507,7 @@ int                 backpains[MAX_ATKS] =
     ANI_BACKPAIN,  ANI_BACKPAIN,     ANI_BACKPAIN,   ANI_BACKPAIN
 };
 
-int                 deaths[MAX_ATKS] =
+animation_id_t      deaths[MAX_ATKS] =
 {
     ANI_DIE,   ANI_DIE2,     ANI_DIE3,  ANI_DIE4,
     ANI_DIE,   ANI_BURNDIE,  ANI_DIE,   ANI_SHOCKDIE,
@@ -517,7 +517,7 @@ int                 deaths[MAX_ATKS] =
     ANI_DIE,   ANI_DIE,      ANI_DIE,   ANI_DIE
 };
 
-int                 backdeaths[MAX_ATKS] =
+animation_id_t      backdeaths[MAX_ATKS] =
 {
     ANI_BACKDIE,   ANI_BACKDIE2,     ANI_BACKDIE3,  ANI_BACKDIE4,
     ANI_BACKDIE,   ANI_BACKBURNDIE,  ANI_BACKDIE,   ANI_BACKSHOCKDIE,
@@ -527,7 +527,7 @@ int                 backdeaths[MAX_ATKS] =
     ANI_BACKDIE,   ANI_BACKDIE,      ANI_BACKDIE,   ANI_BACKDIE
 };
 
-int                 blkpains[MAX_ATKS] =
+animation_id_t      blkpains[MAX_ATKS] =
 {
     ANI_BLOCKPAIN,  ANI_BLOCKPAIN2, ANI_BLOCKPAIN3,  ANI_BLOCKPAIN4,
     ANI_BLOCKPAIN,  ANI_BLOCKPAINB, ANI_BLOCKPAIN,   ANI_BLOCKPAINS,
@@ -537,7 +537,7 @@ int                 blkpains[MAX_ATKS] =
     ANI_BLOCKPAIN,  ANI_BLOCKPAIN,  ANI_BLOCKPAIN,   ANI_BLOCKPAIN
 };
 
-int                 backblkpains[MAX_ATKS] =
+animation_id_t      backblkpains[MAX_ATKS] =
 {
     ANI_BACKBLOCKPAIN,  ANI_BACKBLOCKPAIN2, ANI_BACKBLOCKPAIN3,  ANI_BACKBLOCKPAIN4,
     ANI_BACKBLOCKPAIN,  ANI_BACKBLOCKPAINB, ANI_BACKBLOCKPAIN,   ANI_BACKBLOCKPAINS,
@@ -547,7 +547,7 @@ int                 backblkpains[MAX_ATKS] =
     ANI_BACKBLOCKPAIN,  ANI_BACKBLOCKPAIN,  ANI_BACKBLOCKPAIN,   ANI_BACKBLOCKPAIN
 };
 
-int                 normal_attacks[MAX_ATTACKS] =
+animation_id_t      normal_attacks[MAX_ATTACKS] =
 {
     ANI_ATTACK1, ANI_ATTACK2, ANI_ATTACK3, ANI_ATTACK4
 };
@@ -561,14 +561,14 @@ int                 grab_attacks[GRAB_ACTION_SELECT_MAX][2] =
 	[GRAB_ACTION_SELECT_UP] = {ANI_GRABUP, ANI_GRABUP2}
 };
 
-int                 freespecials[MAX_SPECIALS] =
+animation_id_t      freespecials[MAX_SPECIALS] =
 {
     ANI_FREESPECIAL,   ANI_FREESPECIAL2,  ANI_FREESPECIAL3,
     ANI_FREESPECIAL4,  ANI_FREESPECIAL5,  ANI_FREESPECIAL6,
     ANI_FREESPECIAL7,  ANI_FREESPECIAL8
 };
 
-int                 follows[MAX_FOLLOWS] =
+animation_id_t      follows[MAX_FOLLOWS] =
 {
     ANI_FOLLOW1, ANI_FOLLOW2, ANI_FOLLOW3, ANI_FOLLOW4
 };
@@ -7132,9 +7132,9 @@ void meta_data_free_list(s_meta_data* head)
 * Accept string and return function reference for 
 * damage taking behavior.
 */
-int (*takedamage_get_reference_from_argument(char* value))(struct entity* attacking_entity, s_attack* attack_object, int fall_flag, s_defense* defense_object)
+entity_takedamage_function takedamage_get_reference_from_argument(char* value)
 {
-    int (*result)(struct entity* attacking_entity, s_attack * attack_object, int fall_flag, s_defense * defense_object) = NULL;
+    entity_takedamage_function result = NULL;
 
     if (stricmp(value, "none") == 0)
     {
@@ -9865,7 +9865,7 @@ e_damage_recursive_logic recursive_effect_get_mode_setup_from_legacy_argument(e_
 */
 void recursive_entity_effect_update(entity* acting_entity) {
     s_attack attack;
-    s_defense* defense_object = NULL;
+    const s_defense* defense_object = NULL;
     s_recursive_effect* recursive_effect_collection;
     s_recursive_effect* cursor = NULL;
     s_recursive_effect snapshot;
@@ -10035,7 +10035,7 @@ void recursive_entity_effect_update(entity* acting_entity) {
                     if (acting_entity->takedamage) {
                         /* Pass raw force so takedamage applies normal calculation once. */
                         attack.attack_force = snapshot.force;
-                        acting_entity->takedamage(snapshot.owner, &attack, 0, defense_object);
+                        acting_entity->takedamage(acting_entity, snapshot.owner, &attack, 0, defense_object);
                     } else {
                         kill_entity(acting_entity, KILL_ENTITY_TRIGGER_RECURSIVE_EFFECT);
                     }
@@ -24301,12 +24301,12 @@ int is_walking(int iAni)
 // 2019-02-09
 //
 // Rewritten for greater readability.
-static bool common_anim_series(entity *ent, e_animations *alterates, int max_alternates, int force_mode, e_animations default_animation)
+static bool common_anim_series(entity *ent, const animation_id_t *alterates, int max_alternates, int force_mode, animation_id_t default_animation)
 {
 	int i;						// Loop cursor.
 	int loop_min;							
 	int loop_max;							
-	e_animations animation_id;	// Animation to apply.
+	animation_id_t animation_id;	// Animation to apply.
 	
 	// If we have a forced mode, we'll use it to constrict
 	// loop options to just the forced mode.
@@ -25038,7 +25038,6 @@ void update_frame(entity *ent, uint64_t f)
 {
     entity *tempself;
     s_attack attack = emptyattack;
-    s_defense* defense_object = NULL;
     s_axis_principal_float move;
     s_anim *anim = ent->animation;
 
@@ -25107,7 +25106,7 @@ void update_frame(entity *ent, uint64_t f)
 
     if(anim->weaponframe && anim->weaponframe[0] == f)
     {
-        dropweapon(2);
+        dropweapon(self, 2);
         set_weapon(self, anim->weaponframe[1], 0);
         if(!anim->weaponframe[2])
         {
@@ -25146,13 +25145,12 @@ void update_frame(entity *ent, uint64_t f)
             attack.dropv = default_model_dropv;
             attack.attack_force = self->energy_state.health_current;
             attack.attack_type = ATK_SUB_ENTITY_UNSUMMON;
-            if(self->takedamage)
-            {
-                defense_object = defense_find_current_object(self, NULL, attack.attack_type);
-                self->takedamage(self, &attack, 0, defense_object);
-            }
-            else
-            {
+            
+            if(self->takedamage) {
+                const s_defense* defense_object = defense_find_current_object(self, NULL, attack.attack_type);
+                self->takedamage(self, self, &attack, 0, defense_object);
+            
+            } else {
                 kill_entity(self, KILL_ENTITY_TRIGGER_UNSUMMON);
             }
             self = ent; // lol ...
@@ -25718,11 +25716,9 @@ void kill_entity(entity *victim, e_kill_entity_trigger trigger)
 {
     int i = 0;
     s_attack attack = emptyattack;
-    s_defense* defense_object = NULL;
     entity *tempent = self;
 
-    if(victim == NULL || !victim->exists)
-    {
+    if(victim == NULL || !victim->exists) {
         return;
     }
 
@@ -25739,35 +25735,34 @@ void kill_entity(entity *victim, e_kill_entity_trigger trigger)
     //UT: caution, script function killentity calls this
     clear_all_scripts(victim->scripts, 1);
 
-    if(victim->parent && victim->parent->subentity == victim)
-    {
+    if(victim->parent && victim->parent->subentity == victim) {
         victim->parent->subentity = NULL;
     }
+
     victim->parent = NULL;
-    if(victim->modeldata.summonkill)
-    {
+    
+    if(victim->modeldata.summonkill) {
         attack.attack_type = ATK_SUB_ENTITY_PARENT_KILL;
         attack.dropv = default_model_dropv;
     }
 
-    defense_object = defense_find_current_object(self, NULL, attack.attack_type);
+    const s_defense* defense_object = defense_find_current_object(self, NULL, attack.attack_type);
 
     // kill minions
-    if(victim->modeldata.summonkill == 1 && victim->subentity)
-    {
+    if(victim->modeldata.summonkill == 1 && victim->subentity) {
         // kill only summoned one
         victim->subentity->parent = NULL;
         self = victim->subentity;
         attack.attack_force = self->energy_state.health_current;
-        if(self->takedamage && !level_completed)
-        {
-            self->takedamage(self, &attack, 0, defense_object);
-        }
-        else
-        {
+        
+        if(self->takedamage && !level_completed) {
+            self->takedamage(self, self, &attack, 0, defense_object);
+        
+        } else {
             kill_entity(self, KILL_ENTITY_TRIGGER_PARENT_KILL_SUMMON);
         }
     }
+
     victim->subentity = NULL;
 
     for (i = 0; i < MAX_PLAYERS; i++) {
@@ -25777,63 +25772,57 @@ void kill_entity(entity *victim, e_kill_entity_trigger trigger)
         }
     }
 
-    if(victim == smartbomber)
-    {
+    if(victim == smartbomber) {
         smartbomber = NULL;
     }
-    if(victim == textbox)
-    {
+
+    if(victim == textbox) {
         textbox = NULL;
     }
 
-    for(i = 0; i < ent_max; i++)
-    {
-        if(ent_list[i]->exists)
-        {
+    for(i = 0; i < ent_max; i++) {
+        if(ent_list[i]->exists) {
             // kill all minions
             self = ent_list[i];
-            if(self->parent == victim)
-            {
+            if(self->parent == victim) {
                 self->parent = NULL;
-                if(victim->modeldata.summonkill == 2)
-                {
+                if(victim->modeldata.summonkill == 2) {
+                    
                     attack.attack_force = self->energy_state.health_current;
-                    if(self->takedamage && !level_completed)
-                    {
-                        self->takedamage(self, &attack, 0, defense_object);
-                    }
-                    else
-                    {
+                    
+                    if(self->takedamage && !level_completed) {
+                        self->takedamage(self, self, &attack, 0, defense_object);
+                    } else {
                         kill_entity(self, KILL_ENTITY_TRIGGER_PARENT_KILL_ALL);
                     }
                 }
             }
-            if(self->owner == victim)
-            {
+
+            if(self->owner == victim) {
                 self->owner = victim->owner;
             }
-            if(self->opponent == victim)
-            {
+
+            if(self->opponent == victim) {
                 self->opponent = NULL;
             }
-            if(self->binding.target == victim)
-            {
+
+            if(self->binding.target == victim) {
                 self->binding.target = NULL;
             }
-            if(self->landed_on_platform == victim)
-            {
+
+            if(self->landed_on_platform == victim) {
                 self->landed_on_platform = NULL;
             }
-            if(self->hithead == victim)
-            {
+
+            if(self->hithead == victim) {
                 self->hithead = NULL;
             }
-            if(self->lasthit == victim)
-            {
+
+            if(self->lasthit == victim) {
                 self->lasthit = NULL;
             }
-            if(!textbox && (self->modeldata.type & TYPE_TEXTBOX))
-            {
+
+            if(!textbox && (self->modeldata.type & TYPE_TEXTBOX)) {
                 textbox = self;
             }
         }
@@ -27449,9 +27438,8 @@ void do_active_block(entity *ent)
 * guard break, attack type vs. defense, and
 * so on. It does not handle rules for AI blocking.
 */
-int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body *body) 
-{
-    s_defense* defense_object = NULL;
+bool check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body *body) {
+    
     int temp_block_threshold = 0;
      
 	/* 
@@ -27459,18 +27447,15 @@ int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body
 	* This is to avoid the entity to block while in other animations like RISE, PAIN or WALK.
 	*/
 
-	if (!ent->blocking)
-	{
-		return 0;
+	if (!ent->blocking)	{
+		return false;
 	}
 
 	/* If guardpoints are set, then find out if they've been depleted. */
 	
-    if (ent->modeldata.guardpoints)
-	{
-		if (ent->guardpoints <= 0)
-		{
-			return 0;
+    if (ent->modeldata.guardpoints)	{
+		if (ent->guardpoints <= 0) {
+			return false;
 		}
 	}
     
@@ -27479,24 +27464,20 @@ int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body
 	* we don't have block back flag enabled.
 	*/
     
-    if (ent->direction == other->direction)
-	{
-		if (!(ent->modeldata.block_config_flags & BLOCK_CONFIG_BACK))
-		{
-			return 0;
+    if (ent->direction == other->direction)	{
+		if (!(ent->modeldata.block_config_flags & BLOCK_CONFIG_BACK)) {
+			return false;
 		}
 	}
         
     /* Need defense object for subsequent checks. */
-    defense_object = defense_find_current_object(ent, body, attack->attack_type);
+    const s_defense* defense_object = defense_find_current_object(ent, body, attack->attack_type);
 
     /* Attack block breaking exceeds block power? */
     
-    if (attack->no_block || defense_object->blockpower)
-    {
-        if (attack->no_block >= defense_object->blockpower)
-        {
-            return 0;
+    if (attack->no_block || defense_object->blockpower) {
+        if (attack->no_block >= defense_object->blockpower) {
+            return false;
         }
     }
 
@@ -27509,11 +27490,9 @@ int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body
 
     temp_block_threshold = ent->modeldata.thold + defense_object->blockthreshold;
 
-    if (temp_block_threshold)
-	{
-		if (temp_block_threshold > attack->attack_force)
-		{
-			return 0;
+    if (temp_block_threshold) {
+		if (temp_block_threshold > attack->attack_force) {
+			return false;
 		}
 	}
 
@@ -27522,7 +27501,7 @@ int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body
 	* attack can be blocked. Return true.
 	*/
 
-    return 1;
+    return true;
 }
 
 // Caskey, Damon V.
@@ -27531,59 +27510,50 @@ int check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body
 // Mandatory conditions the AI must pass before it
 // can decide to block. These are not rules for
 // blocking in general.
-int check_blocking_rules(entity *ent)
-{
+bool check_blocking_rules(entity *ent) {
 	// If already blocking we can
 	// forget the rest and return
 	// true right away.
-	if (ent->blocking)
-	{
-		return 1;
+	if (ent->blocking) {
+		return true;
 	}
 
 	// No blocking animation?
-	if (!validanim(ent, ANI_BLOCK))
-	{
-		return 0;
+	if (!validanim(ent, ANI_BLOCK))	{
+		return false;
 	}
 
 	// Have to be idle.
-	if (!ent->idling)
-	{
-		return 0;
+	if (!ent->idling) {
+		return false;
 	}
 
 	// AI can't be attacking.
-	if (ent->attacking == ATTACKING_ACTIVE)
-	{
-		return 0;
+	if (ent->attacking == ATTACKING_ACTIVE)	{
+		return false;
 	}
 
 	// Grappling?
-	if (ent->link)
-	{
-		return 0;
+	if (ent->link) {
+		return false;
 	}
 
 	//  Airborne?
-	if (inair(ent))
-	{
-		return 0;
+	if (inair(ent))	{
+		return false;
 	}
 
 	// Frozen?
-	if (ent->frozen)
-	{
-		return 0;
+	if (ent->frozen) {
+		return false;
 	}
 
 	// Falling?
-	if (ent->falling)
-	{
-		return 0;
+	if (ent->falling) {
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
 // Caskey, Damon V.
@@ -27592,16 +27562,14 @@ int check_blocking_rules(entity *ent)
 // AI blocking decision. Handles AI's chances
 // to block. Returns true if AI chooses to attempt 
 // a block.
-int check_blocking_decision(entity *ent)
-{
+bool check_blocking_decision(entity *ent) {
+
 	// If we have active block enabled and we're
 	// already blocking, then we want the AI to
 	// keep blocking (like most players would).
-	if (ent->modeldata.block_config_flags & BLOCK_CONFIG_ACTIVE)
-	{
-		if (ent->blocking)
-		{
-			return 1;
+	if (ent->modeldata.block_config_flags & BLOCK_CONFIG_ACTIVE) {
+		if (ent->blocking) {
+			return true;
 		}
 	}
 
@@ -27609,14 +27577,13 @@ int check_blocking_decision(entity *ent)
 	// Now it works as intended (1 = block all / 2147483647 = never block)
 	// Run random chance against blockodds. If it
 	// passes, AI will block.
-	if ((rand32()&ent->modeldata.blockodds) == 0)
-	{
-		return 1;
+	if ((rand32()&ent->modeldata.blockodds) == 0) {
+		return true;
 	}
 
 	// If we got this far, we never decided to
 	// block, so return false.
-	return 0;
+	return false;
 }
 
 // Caskey, Damon V.
@@ -27624,60 +27591,52 @@ int check_blocking_decision(entity *ent)
 //
 // Runs all blocking conditions and returns true
 // if the attack should be blocked.
-int check_blocking_master(entity *ent, entity *other, s_attack *attack, s_body *body)
-{
+bool check_blocking_master(entity *ent, entity *other, s_attack *attack, s_body *body) {
 	e_entity_type entity_type;
 
 	entity_type = ent->modeldata.type;
 
-    if (ent->modeldata.block_config_flags & BLOCK_CONFIG_DISABLED)
-    {
-        return 0;
+    if (ent->modeldata.block_config_flags & BLOCK_CONFIG_DISABLED) {
+        return false;
     }
 
 	// Check AI or player blocking rules.
-	if (entity_type & TYPE_PLAYER)
-	{
+	if (entity_type & TYPE_PLAYER)	{
 		// For players, all we need to know is if they
 		// are in a blocking state. If not we exit.
-		if (!ent->blocking)
-		{
-			return 0;
+		if (!ent->blocking) {
+			return false;
 		}
 
 		// Verify entity can block the attack at all.
-		if (!check_blocking_eligible(ent, other, attack, body))
-		{
-			return 0;
+		if (!check_blocking_eligible(ent, other, attack, body)) {
+			return false;
 		}
-	}
-	else
-	{
+	
+    } else {
+
 		// AI must pass a series of conditions
 		// before it may block attacks.
-		if (!check_blocking_rules(ent))
-		{
-			return 0;
+		if (!check_blocking_rules(ent)) {
+			return false;
 		}
 
 		// Now that we know AI is allowed
 		// to block let's find out if it
 		// wants to.
-		if (!check_blocking_decision(ent))
-		{
-			return 0;
+		if (!check_blocking_decision(ent)) {
+			return false;
 		}
 
 		// Verify entity can block the attack at all.
-		if (!check_blocking_eligible(ent, other, attack, body))
-		{
-			return 0;
+		if (!check_blocking_eligible(ent, other, attack, body))	{
+			return false;
 		}
 	}
 
 	// Looks like we made it through
 	// all the verifications. Return true.
-	return 1;
+	return true;
 }
 
 /* 
@@ -27722,16 +27681,15 @@ void set_blocking_action(entity *ent, entity *other, s_attack *attack)
 // Verify entity has blockpain and that attack
 // should trigger it.
 // Kratus (01-2024) Minor fix in the blockpain flag check (inverted)
-int check_blocking_pain(entity *ent, s_attack *attack)
-{
-	// If blockpain is greater than attack
+bool check_blocking_pain(const entity *ent, const s_attack *attack) {
+	
+    // If blockpain is greater than attack
 	// force, we don't apply it.
-	if (attack->attack_force >= self->modeldata.blockpain)
-	{
-		return 1;
+	if (attack->attack_force >= ent->modeldata.blockpain) {
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 // Caskey, Damon V.
@@ -27744,7 +27702,7 @@ void set_blocking_animation(entity *ent, s_attack *attack)
 	// apply it here.
 	if (check_blocking_pain(ent, attack))
 	{
-		set_blockpain(self, attack->attack_type, 1);
+		set_blockpain(ent, attack->attack_type, 1);
 	}
 	else
 	{
@@ -28115,7 +28073,7 @@ int check_follow_up_condition(entity *ent, entity *target, s_anim *animation, in
 */
 int try_follow_up(entity *ent, entity *target, s_anim *animation, int didblock)
 {
-	e_animations animation_id = ANI_NONE;
+	animation_id_t animation_id = ANI_NONE;
 
 	/* If we don't have a follow action, get out. */
 	
@@ -28151,141 +28109,113 @@ int try_follow_up(entity *ent, entity *target, s_anim *animation, int didblock)
 *
 * Verify an attack meets conditions to trigger a counter action.
 */
-int check_counter_condition(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object)
-{
+bool check_counter_condition(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object) {
+
 	s_counter_action* counter = &target->animation->counter_action;
-    s_defense* defense_object = NULL;
-    int force = 0;
+    int64_t force = 0;
 
 	/* If there's no condition, get out now. */
-	if (!counter->condition)
-	{
-		return 0;
+	if (!counter->condition) {
+		return false;
 	}
 
 	/* Verify in the frame range. */
-	if (target->animpos < counter->frame.min || target->animpos > counter->frame.max)
-	{
-		return 0;
+	if (target->animpos < counter->frame.min || target->animpos > counter->frame.max) {
+		return false;
 	}
 	
 	/* Now we verify condition flags. */
 
 	/* Always is always... */
-	if (counter->condition == COUNTER_ACTION_CONDITION_ANY)
-	{
-		return 1;
+	if (counter->condition == COUNTER_ACTION_CONDITION_ANY)	{
+		return true;
 	}
 
 	/* In the back ? */
-	if (counter->condition & COUNTER_ACTION_CONDITION_BACK_FALSE)
-	{
-		if (target->direction == attacker->direction)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_BACK_FALSE) {
+		if (target->direction == attacker->direction) {
+			return false;
 		}
 	}
 
-	if (counter->condition & COUNTER_ACTION_CONDITION_BACK_TRUE)
-	{
-		if (target->direction != attacker->direction)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_BACK_TRUE) {
+		if (target->direction != attacker->direction) {
+			return false;
 		}
 	}
 	
     /* We need defense object for subsequent checks. */
-    defense_object = defense_find_current_object(target, body_object, attack_object->attack_type);
+    const s_defense* defense_object = defense_find_current_object(target, body_object, attack_object->attack_type);
 
 	/* Blockable ? */
-	if (counter->condition & COUNTER_ACTION_CONDITION_BLOCK_FALSE)
-	{
-		if (attack_object->no_block <= defense_object->blockpower)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_BLOCK_FALSE) {
+		if (attack_object->no_block <= defense_object->blockpower) {
+			return false;
 		}
 	}
 
-	if (counter->condition & COUNTER_ACTION_CONDITION_BLOCK_TRUE)
-	{
-		if (attack_object->no_block > defense_object->blockpower)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_BLOCK_TRUE) {
+		if (attack_object->no_block > defense_object->blockpower) {
+			return false;
 		}
 	}
 
 	/* Vs.lethal / non - lethal damage. */
 	force = calculate_force_damage(target, attacker, attack_object, defense_object, FALSE);
 
-	if (counter->condition & COUNTER_ACTION_CONDITION_DAMAGE_LETHAL_FALSE)
-	{
-		if (target->energy_state.health_current <= force)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_DAMAGE_LETHAL_FALSE) {
+		if (target->energy_state.health_current <= force) {
+			return false;
 		}
 	}
 
-	if (counter->condition & COUNTER_ACTION_CONDITION_DAMAGE_LETHAL_TRUE)
-	{
-		if (target->energy_state.health_current > force)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_DAMAGE_LETHAL_TRUE) {
+		if (target->energy_state.health_current > force) {
+			return false;
 		}
 	}
 
 	/* Freeze attack ? */
-	if (counter->condition & COUNTER_ACTION_CONDITION_FREEZE_FALSE)
-	{
-		if (attack_object->freeze)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_FREEZE_FALSE) {
+		if (attack_object->freeze) {
+			return false;
 		}
 	}
 
-	if (counter->condition & COUNTER_ACTION_CONDITION_FREEZE_TRUE)
-	{
-		if (!attack_object->freeze)
-		{
-			return 0;
+	if (counter->condition & COUNTER_ACTION_CONDITION_FREEZE_TRUE) {
+		if (!attack_object->freeze)	{
+			return false;
 		}
 	}
 
 	/* Attacker hostile to us ? */
-	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_ATTACKER_FALSE)
-	{
-        if (faction_check_is_hostile(attacker, target))
-        {
-            return 0;
+	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_ATTACKER_FALSE) {
+        if (faction_check_is_hostile(attacker, target)) {
+            return false;
         }
 	}
 
-	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_ATTACKER_TRUE)
-	{
-        if (!faction_check_is_hostile(attacker, target))
-        {
-            return 0;
+	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_ATTACKER_TRUE) {
+        if (!faction_check_is_hostile(attacker, target)) {
+            return false;
         }
 	}
 
 	/* Hostile to attacker ? */
-	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_TARGET_FALSE)
-	{
-        if (faction_check_is_hostile(target, attacker))
-        {
-            return 0;
+	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_TARGET_FALSE) {
+        if (faction_check_is_hostile(target, attacker)) {
+            return false;
         }
 	}
 
-	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_TARGET_TRUE)
-	{
-        if (!faction_check_is_hostile(target, attacker))
-        {
-            return 0;
+	if (counter->condition == COUNTER_ACTION_CONDITION_HOSTILE_TARGET_TRUE)	{
+        if (!faction_check_is_hostile(target, attacker)) {
+            return false;
         }
 	}
 
 	/* Passed all checks. We can return true. */
-	return 1;
+	return true;
 }
 
 /*
@@ -28296,57 +28226,47 @@ int check_counter_condition(entity* target, entity* attacker, s_attack* attack_o
 * If successful, sets entity animation to
 * appropriate counter and returns true.
 */
-int try_counter_action(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object)
-{
-	int force = 0;
-	int current_follow_id = 0;
-    s_defense* defense_object = NULL;
-
+bool try_counter_action(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object) {
+    
     /*
 	* If we don't have a follow animation to use 
 	* for counter, get out.
 	*/
     
-    if (!target->animation->followup.animation)
-	{
-		return 0;
+    if (!target->animation->followup.animation)	{
+		return false;
 	}
 
 	/* Must meet counter action conditions. */
 	
-    if (!check_counter_condition(target, attacker, attack_object, body_object))
-	{
-		return 0;
+    if (!check_counter_condition(target, attacker, attack_object, body_object))	{
+		return false;
 	}	
 
 	/* Take damage from attack ? */
 	
-    if (target->animation->counter_action.damaged == COUNTER_ACTION_TAKE_DAMAGE_NORMAL)
-	{
-		/* We need the real damage. */
-        defense_object = defense_find_current_object(target, body_object, attack_object->attack_type);
+    if (target->animation->counter_action.damaged == COUNTER_ACTION_TAKE_DAMAGE_NORMAL)	{
 
-		force = calculate_force_damage(target, attacker, attack_object, defense_object, FALSE);
+		/* We need the real damage. */
+        const s_defense* defense_object = defense_find_current_object(target, body_object, attack_object->attack_type);
+
+		const int64_t force = calculate_force_damage(target, attacker, attack_object, defense_object, FALSE);
 
 		/* Revert lethal damage to 1. */
-		if (target->energy_state.health_current - force <= 0)
-		{
+		if (target->energy_state.health_current - force <= 0) {
 			target->energy_state.health_current = 1;
-		}
-		else
-		{
+		
+        } else {
 			target->energy_state.health_current -= force;
 		}
 	}
 
 	/* Set counter animation if we can. */
 	
-    current_follow_id = animfollows[target->animation->followup.animation - 1];
+    const animation_id_t current_follow_id = animfollows[target->animation->followup.animation - 1];
 	
-    if (validanim(self, current_follow_id))
-	{
-		if (!target->modeldata.animation[current_follow_id]->attack_one)
-		{
+    if (validanim(target, current_follow_id)) {
+		if (!target->modeldata.animation[current_follow_id]->attack_one) {
 			target->modeldata.animation[current_follow_id]->attack_one = target->animation->attack_one;
 		}
 		ent_set_anim(target, current_follow_id, 0);
@@ -28355,7 +28275,7 @@ int try_counter_action(entity* target, entity* attacker, s_attack* attack_object
 	/* Flash spawn. */
 	spawn_attack_flash(target, attack_object, attack_object->flash.model_block, target->modeldata.flash.model_block);
 
-	return 1;
+	return true;
 }
 
 /*
@@ -28441,24 +28361,40 @@ int attack_id_check_match(entity* acting_entity, s_attack* attack_object, int at
     return 0;
 }
 
-void do_attack(entity *attacking_entity)
-{
-    int indirect = 0;
+/*
+* Caskey, Damon V.
+* 2026-07-23
+*
+* Invoke legacy item collection with the 
+* collecting entity as self.
+*
+* didfind_item() does not yet accept the 
+* collector explicitly. Isolate that compatibility 
+*requirement here instead of exposing do_attack() to self.
+*/
+static void do_attack_invoke_didfind_item(entity* target_entity, entity* item_entity) {
+    entity* previous_self = self;
+
+    self = target_entity;
+    didfind_item(item_entity);
+    self = previous_self;
+}
+
+void do_attack(entity *attacking_entity) {
     int i = 0;
-    int force = 0;
+    int64_t force = 0;
     e_blocktype blocktype       = BLOCK_TYPE_MP_FIRST;
-    entity* temp                = NULL;
     entity* def                 = NULL;
     entity* topowner            = NULL;
     entity* otherowner          = NULL;
     entity* target              = NULL;
     s_anim* current_anim        = NULL;
     s_attack* attack            = NULL;
-    s_defense* defense_object = NULL;
     s_body* target_body_object  = NULL;
-    int didhit              = 0;
-    int didblock            = 0;    // So a different sound effect can be played when an attack is blocked
-    int current_attack_id   = 0;
+    const s_defense* defense_object = NULL;
+    bool didhit              = false;  // So a different sound effect can be played when an attack hits
+    bool didblock            = false;    // So a different sound effect can be played when an attack is blocked
+    uint64_t current_attack_id   = 0;
     //int hit_detected        = 0;    // Has a hit been detected?
 
 
@@ -28466,32 +28402,25 @@ void do_attack(entity *attacking_entity)
     static uint64_t new_attack_id = 1;
 
     // Can't get hit after this
-    if(level_completed)
-    {
+    if(level_completed) {
         return;
     }
 
     topowner = attacking_entity; // trace the top owner, for projectile combo checking :)
-    while(topowner->owner)
-    {
+    while(topowner->owner) {
         topowner = topowner->owner;
     }
 
 	// If any blast active, use indirect damage downstream.
-    if(attacking_entity->projectile != BLAST_NONE)
-    {
-        indirect = 1;
-    }
+    const bool indirect = attacking_entity->projectile != BLAST_NONE ? true : false;
 
     // Every attack gets a unique ID to make sure no one
     // gets hit more than once by the same attack
     current_attack_id = attacking_entity->attack_id_outgoing;
 
-    if(!current_attack_id)
-    {
+    if(!current_attack_id) {
         ++new_attack_id;
-        if(new_attack_id == 0)
-        {
+        if(new_attack_id == 0) {
             new_attack_id = 1;
         }
         attacking_entity->attack_id_outgoing = current_attack_id = new_attack_id;
@@ -28500,12 +28429,10 @@ void do_attack(entity *attacking_entity)
 
     current_anim = attacking_entity->animation;
 
-    for(i = 0; i < ent_max && !followed; i++)
-    {
+    for(i = 0; i < ent_max && !followed; i++) {
         target = ent_list[i];
 
-        if(!target->exists)
-        {
+        if(!target->exists) {
             continue;
         }
 
@@ -28514,8 +28441,7 @@ void do_attack(entity *attacking_entity)
         // collision pointers are also
         // populated into lasthit, which
         // we will use below.
-        if(!checkhit(attacking_entity, target))
-        {
+        if(!checkhit(attacking_entity, target)) {
             continue;
         }
                 
@@ -28525,8 +28451,7 @@ void do_attack(entity *attacking_entity)
         defense_object = defense_find_current_object(target, target_body_object, attack->attack_type);
 
         // Verify target is alive.
-        if(target->death_state & DEATH_STATE_DEAD)
-        {
+        if(target->death_state & DEATH_STATE_DEAD) {
             continue;
         }
 
@@ -28534,10 +28459,8 @@ void do_attack(entity *attacking_entity)
         // or attack type is an item.
         // This is to allow item collection
         // even while invincible.
-        if(target->invincible & INVINCIBLE_INTANGIBLE)
-        {
-            if(attack->attack_type != ATK_ITEM)
-            {
+        if(target->invincible & INVINCIBLE_INTANGIBLE) {
+            if(attack->attack_type != ATK_ITEM) {
                 continue;
             }
         }
@@ -28549,12 +28472,9 @@ void do_attack(entity *attacking_entity)
         // differs from current target,
         // then we are trying to hit
         // another entity and should exit.
-        if(current_anim->attack_one)
-        {
-            if(attacking_entity->lasthit)
-            {
-                if(target != attacking_entity->lasthit)
-                {
+        if(current_anim->attack_one) {
+            if(attacking_entity->lasthit) {
+                if(target != attacking_entity->lasthit) {
                     continue;
                 }
             }
@@ -28564,8 +28484,7 @@ void do_attack(entity *attacking_entity)
         * Verify this is a faction we
         * can hit.
         */
-        if (!faction_check_can_damage(attacking_entity, target, indirect))
-        {
+        if (!faction_check_can_damage(attacking_entity, target, indirect)) {
             continue;
         }        
 
@@ -28575,15 +28494,13 @@ void do_attack(entity *attacking_entity)
         * between hits so engine will not
         * run hit on every update.
         */
-        if(target->next_hit_time >= _time)
-        {
+        if(target->next_hit_time >= _time) {
             continue;
         }
 
         // Target takedamage flag
         // must be set.
-        if(!target->takedamage)
-        {
+        if(!target->takedamage) {
             continue;
         }
         
@@ -28595,8 +28512,10 @@ void do_attack(entity *attacking_entity)
         * Note that function includes exceptions for an attacks 
         * that ignore IDs and the global mutlihit cheat.
         */
-        if (attack_id_check_match(target, attack, current_attack_id, (global_config.cheats & CHEAT_OPTIONS_MULTIHIT_ACTIVE)))
-        {
+        const bool multihit_enabled = (global_config.cheats & CHEAT_OPTIONS_MULTIHIT_ACTIVE) != 0;
+        const bool attack_id_match = attack_id_check_match(target, attack, current_attack_id, multihit_enabled);
+
+        if(attack_id_match) {
             continue;
         }
 
@@ -28604,41 +28523,32 @@ void do_attack(entity *attacking_entity)
         // attack only hits standing targets.
 		// Otherwise exit if attack only hits 
 		// grounded targets.
-        if(target->takeaction == common_lie)
-        {
-            if(attack->otg == OTG_NONE)
-            {
+        if(target->takeaction == common_lie) {
+            if(attack->otg == OTG_NONE) {
                 continue;
             }
-        }
-		else
-		{
-            if(attack->otg == OTG_GROUND_ONLY)
-            {
+        
+        } else {
+            if(attack->otg == OTG_GROUND_ONLY) {
                 continue;
             }
         }    
 
         //printf("\n\n Check");
 
-        if(inair(target))
-        {
+        if(inair(target)) {
             //printf("\n\n In air. \n\t Jugglecost: %d \n\t Jugglepoints: %d", attack->jugglecost, target->jugglepoints);
 
-            if(attack->jugglecost > target->jugglepoints)
-            {
+            if(attack->jugglecost > target->jugglepoints) {
                 //printf("\n\n Continue.");
                 continue;
             }
         }
 
-        temp = self;
-        self = target;
-
         // Execute the doattack scripts so author can set take action
         // before the hit code below does.
-        execute_ondoattack_script(self, attacking_entity, attack, EXCHANGE_RECIPIANT, current_attack_id);
-        execute_ondoattack_script(attacking_entity, self, attack, EXCHANGE_CONFERRER, current_attack_id);
+        execute_ondoattack_script(target, attacking_entity, attack, EXCHANGE_RECIPIANT, current_attack_id);
+        execute_ondoattack_script(attacking_entity, target, attack, EXCHANGE_CONFERRER, current_attack_id);
 
         // 2010-12-31
         // Damon V. Caskey
@@ -28647,24 +28557,15 @@ void do_attack(entity *attacking_entity)
         // certainly with the ondoattack event scripts above. Skip the engine's
         // default hit handling below. Useful for scripting parry systems, alternate blocking,
         // or other custom collision events.
-        if(lasthit.confirm)
-        {
-            didhit = 1;
-        }
-        else
-        {
-            // By White Dragon
-            // This line: self = temp; is the fix for
-            // !lasthit.confirm bug. Without it when
-            // active lasthitc 0 the damagetaker has
-            // weird speedy effect.
-            self = temp;
+        if(lasthit.confirm) {
+            didhit = true;
+        
+        } else {
             continue;
         }
 
-        otherowner = self; // trace top owner for opponent
-        while(otherowner->owner)
-        {
+        otherowner = target; // trace top owner for opponent
+        while(otherowner->owner) {
             otherowner = otherowner->owner;
         }
 
@@ -28675,26 +28576,25 @@ void do_attack(entity *attacking_entity)
 		// projectile won't be able to hit its original owner. If they need to know the 
 		// original owner after changing the owner property, they can check the parent 
 		// property.
-		if(topowner == otherowner)
-        {
-            didhit = 0;
+		if(topowner == otherowner) {
+            didhit = false;
         }
 
         //Ground missle checking, and bullets wont hit each other
-        if( (attacking_entity->owner && self->owner) ||
-                (attacking_entity->modeldata.ground && inair(attacking_entity)))
-        {
-            didhit = 0;
+        
+        const bool both_owners_exist = attacking_entity->owner && target->owner;
+        const bool ground_attack_is_airborne = attacking_entity->modeldata.ground && inair(attacking_entity);
+
+        if(both_owners_exist || ground_attack_is_airborne) {
+            didhit = false;
         }
 
         // Blocking code section.
-        if(didhit)
-        {
-            if(attack->attack_type == ATK_ITEM)
-            {
-                do_item_script(self, attacking_entity);
+        if(didhit) {
+            if(attack->attack_type == ATK_ITEM) {
+                do_item_script(target, attacking_entity);
 
-                didfind_item(attacking_entity);
+                do_attack_invoke_didfind_item(target, attacking_entity);
                 return;
             }
             
@@ -28707,65 +28607,57 @@ void do_attack(entity *attacking_entity)
             * hits normally.
             */
 
-            if(self->toexplode & EXPLODE_PREPARE_TOUCH)
-            {
-                if (validanim(self, ANI_ATTACK2))
-                {
-                    self->toexplode |= EXPLODE_DETONATE_DAMAGED;
+            if(target->toexplode & EXPLODE_PREPARE_TOUCH) {
+                if (validanim(target, ANI_ATTACK2)) {
+                    target->toexplode |= EXPLODE_DETONATE_DAMAGED;
                 }
             }
            
-            if(attacking_entity->toexplode & EXPLODE_PREPARE_TOUCH)
-            {
+            if(attacking_entity->toexplode & EXPLODE_PREPARE_TOUCH) {
                 attacking_entity->toexplode |= EXPLODE_DETONATE_HIT;
             }
 
             /*
             * Reduce available juggle points.
             */
-            if(inair(self))
-            {
-                self->jugglepoints -= attack->jugglecost;
+            if(inair(target)) {
+                target->jugglepoints -= attack->jugglecost;
             }
 
-            didblock = check_blocking_master(self, attacking_entity, attack, target_body_object);
+            didblock = check_blocking_master(target, attacking_entity, attack, target_body_object);
 
             // Blocking the attack?
-            if(didblock)
-            {
+            if(didblock) {
                 // Perform the blocking actions.
-                do_passive_block(self, attacking_entity, attack);
-            }
-            // Counter the attack? 
-           	else if(try_counter_action(self, attacking_entity, attack, target_body_object))
-			{		
+                do_passive_block(target, attacking_entity, attack);
+            
+            } else if(try_counter_action(target, attacking_entity, attack, target_body_object)) {	// Counter action?
+
                 /* Kratus(20 - 04 - 21) used by the multihit glitch memorization. */
-                attack_update_id(self, current_attack_id);
-            }
-            else if(self->takedamage(attacking_entity, attack, 0, defense_object))
-            {
+                attack_update_id(target, current_attack_id);
+            
+            } else if(target->takedamage(target, attacking_entity, attack, 0, defense_object)) {
                 
 
-                // This is the block for normal hits. The
-                // hit was not blocked, countered, or
+                // This is the code block for normal hits. 
+                // The hit was not blocked, countered, or
                 // otherwise nullified, and this entity
                 // has takedamage() function. Let's
                 // process the hit.
 
-                execute_didhit_script(attacking_entity, self, attack, 0);
+                execute_didhit_script(attacking_entity, target, attack, 0);
                 ++attacking_entity->animation->hit_count;
 
-                attacking_entity->lasthit = self;
+                attacking_entity->lasthit = target;
 
                 // Flash spawn.
-                spawn_attack_flash(self, attack, attack->flash.model_hit, self->modeldata.flash.model_hit);
+                spawn_attack_flash(target, attack, attack->flash.model_hit, target->modeldata.flash.model_hit);
 
 				// Add to owner's combo time.
                 topowner->combotime = _time + combodelay; 
 
 				// If equalairpause is set, inair(attacking_entity) is nolonger a condition for extra pausetime.
-                if(attacking_entity->pausetime < _time || (inair(attacking_entity) && !equalairpause))
-                {
+                if(attacking_entity->pausetime < _time || (inair(attacking_entity) && !equalairpause)) {
                     // Adds pause to the current animation
                     attacking_entity->toss_time += attack->pause_add;      // So jump height pauses in midair
                     attacking_entity->nextmove += attack->pause_add;      // xdir, zdir
@@ -28776,40 +28668,36 @@ void do_attack(entity *attacking_entity)
                     attacking_entity->pausetime = _time + attack->pause_add ; //UT: temporary solution
                 }
 
-                self->toss_time += attack->pause_add;       // So jump height pauses in midair
-                self->nextmove += attack->pause_add;      // xdir, zdir
-                self->nextanim += attack->pause_add;        //Pause animation for a bit
-                self->nextthink += attack->pause_add;       // So anything that auto moves will pause
+                target->toss_time += attack->pause_add;       // So jump height pauses in midair
+                target->nextmove += attack->pause_add;      // xdir, zdir
+                target->nextanim += attack->pause_add;        //Pause animation for a bit
+                target->nextthink += attack->pause_add;       // So anything that auto moves will pause
 
-            }
-            else
-            {
+            }  else  {
                 // If we made it to this block the hit was
                 // not countered or blocked, but the entity
                 // does not have a takedamage() function. It
                 // therefore must be a type that is meant
                 // to ignore hits.
 
-                didhit = 0;
+                didhit = false;
                 continue;
             }
 
             // 2007 3 24, hmm, def should be like this
-            if(didblock && !def)
-            {
-                def = self;
+            if(didblock && !def)  {
+                def = target;
             }
             
 			// Attacker executes a follow up animation if it can.
-			try_follow_up(attacking_entity, self, attacking_entity->animation, didblock);
+			try_follow_up(attacking_entity, target, attacking_entity->animation, didblock);
 
             /* Kratus(20 - 04 - 21) used by the multihit glitch memorization. */
-            attack_update_id(self, current_attack_id);
+            attack_update_id(target, current_attack_id);
 
 			// If hit, stop blocking.
-			if(self == def)
-            {
-                self->blocking = didblock;   
+			if(target == def) {
+                target->blocking = didblock;   
             }
 
             /*
@@ -28817,19 +28705,17 @@ void do_attack(entity *attacking_entity)
             * 2011-11-24 UT
 			*
 			* Move the next_hit_time logic here, because block needs this 
-			* as well. Otherwise, blockratio causes instant death
+            * as well. Otherwise, blockratio causes instant death
             */
-            self->next_hit_time = _time + (attack->next_hit_time ? attack->next_hit_time : (global_config.game_speed / 5));
-            self->nextattack = 0; // reset this, make it easier to fight back
+            target->next_hit_time = _time + (attack->next_hit_time ? attack->next_hit_time : (global_config.game_speed / 5));
+            target->nextattack = 0; // reset this, make it easier to fight back
         }
-        self = temp;
 
     }
 
 
     // Did we get a hit? let's process it.
-    if(didhit)
-    {
+    if(didhit) {
 		// Handle energy cost if attacking animation has any.
 
 		// Caskey, Damon V.
@@ -28838,28 +28724,25 @@ void do_attack(entity *attacking_entity)
 		// I'm honestly not sure how the legacy logic works. Will need to spend
 		// some more time breaking it down.
 
-        if(current_anim->energy_cost.cost > 0)
-        {
+        if(current_anim->energy_cost.cost > 0) {
+
             // well, dont check player or not - UTunnels. TODO: take care of that health cheat
-            if(attacking_entity == topowner && nocost && !(global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE))
-            {
+            if(attacking_entity == topowner && nocost && !(global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE)) {
                 attacking_entity->tocost = 1;    // Set flag so life is subtracted when animation is finished
-            }
-            else if(attacking_entity != topowner && nocost && !(global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE) && !attacking_entity->tocost) // if it is not top, then must be a shot
-            {
-                if(current_anim->energy_cost.mponly != COST_TYPE_MP_THEN_HP && topowner->energy_state.mp_current > 0)
-                {
+            
+            } else if(attacking_entity != topowner && nocost && !(global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE) && !attacking_entity->tocost) { // if it is not top, then must be a shot.
+            
+                if(current_anim->energy_cost.mponly != COST_TYPE_MP_THEN_HP && topowner->energy_state.mp_current > 0) {
+                    
                     topowner->energy_state.mp_current -= current_anim->energy_cost.cost;
-                    if(topowner->energy_state.mp_current < 0)
-                    {
+                    if(topowner->energy_state.mp_current < 0) {
                         topowner->energy_state.mp_current = 0;
                     }
-                }
-                else
-                {
+                
+                } else {
                     topowner->energy_state.health_current -= current_anim->energy_cost.cost;
-                    if(topowner->energy_state.health_current <= 0)
-                    {
+                    
+                    if(topowner->energy_state.health_current <= 0) {
                         topowner->energy_state.health_current = 1;
                     }
                 }
@@ -28965,21 +28848,18 @@ void do_attack(entity *attacking_entity)
             } else if(nochipdeath) {
                 def->energy_state.health_current = 1;
             } else {
-                temp = self;
-                self = def;
-                self->takedamage(attacking_entity, attack, 0, defense_object);
-                self = temp;
+                def->takedamage(def, attacking_entity, attack, 0, defense_object);
             }            
         }
 
 		// If the attack was not blocked, let's increment the
 		// attacker's combo counter and time.
-        if(!didblock)
-        {
+        if(!didblock) {
+
             topowner->rush.time = _time + (global_config.game_speed * rush[1]);
             topowner->rush.count++;
-            if(topowner->rush.count > topowner->rush.max && topowner->rush.count > 1)
-            {
+            
+            if(topowner->rush.count > topowner->rush.max && topowner->rush.count > 1) {
                 topowner->rush.max = topowner->rush.count;
             }
         }
@@ -28992,8 +28872,7 @@ void do_attack(entity *attacking_entity)
 		* kills itself instantly. Used mainly for
 		* projectiles.
         */
-        if(attacking_entity->autokill & AUTOKILL_ATTACK_HIT)
-        {
+        if(attacking_entity->autokill & AUTOKILL_ATTACK_HIT) {
             kill_entity(attacking_entity, KILL_ENTITY_TRIGGER_AUTOKILL_ATTACK_HIT);
         }
     }
@@ -29499,69 +29378,62 @@ void check_gravity(entity *e)
     self = tempself;
 }
 
-int check_lost()
-{
-    s_defense* defense_object = NULL;
+bool check_lost() {
+
     s_attack attack = emptyattack;
     int osk = self->modeldata.offscreenkill ? self->modeldata.offscreenkill : DEFAULT_OFFSCREEN_KILL;
 
     if((self->position.z != ITEM_HIDE_POSITION_Z && (advancex - self->position.x > osk || self->position.x - advancex - videomodes.hRes > osk ||
                               (level->scrolldir != SCROLL_UP && level->scrolldir != SCROLL_DOWN && (advancey - self->position.z + self->position.y > osk || self->position.z - self->position.y - advancey - videomodes.vRes > osk)) ||
                               ((level->scrolldir == SCROLL_UP || level->scrolldir == SCROLL_DOWN) && (self->position.z - self->position.y < -osk || self->position.z - self->position.y > videomodes.vRes + osk))		) )
-            || self->position.y < 2 * PIT_DEPTH) //self->position.z<ITEM_HIDE_POSITION_Z, so weapon item won't be killed
-    {
-        if(self->modeldata.type & TYPE_PLAYER)
-        {
+            || self->position.y < 2 * PIT_DEPTH) {
+    
+        if(self->modeldata.type & TYPE_PLAYER) {
             player_die();
-        }
-        else
-        {
+        
+        } else {
             kill_entity(self, KILL_ENTITY_TRIGGER_OUT_OF_BOUNDS);
         }
-        return 1;
+        return true;
     }
 
+    const s_defense* defense_object = defense_find_current_object(self, NULL, attack.attack_type);
+
     // fall into a pit
-    if(self->position.y < PIT_DEPTH)
-    {
-        if(!self->takedamage)
-        {
+    if(self->position.y < PIT_DEPTH) {
+        
+        if(!self->takedamage) {
             kill_entity(self, KILL_ENTITY_TRIGGER_PIT);
-        }
-        else
-        {
+        
+        } else {
             attack.dropv	= default_model_dropv;
             attack.attack_force = self->energy_state.health_current;
             attack.attack_type  = ATK_PIT;
-            defense_object = defense_find_current_object(self, NULL, attack.attack_type);
-            self->takedamage(self, &attack, 0, defense_object);
+            
+            self->takedamage(self, self, &attack, 0, defense_object);
         }
-        return 1;
-    }
-    else if(self->lifespancountdown < 0) //Lifespan expired.
-    {
-        if(!self->takedamage)
-        {
+        return true;
+    
+    } else if(self->lifespancountdown < 0) { //Lifespan expired.
+
+        if(!self->takedamage) {
             kill_entity(self, KILL_ENTITY_TRIGGER_LIFESPAN);
-        }
-        else
-        {
+        
+        } else {
             attack.dropv	= default_model_dropv;
             attack.attack_force = self->energy_state.health_current;
             attack.attack_type  = ATK_LIFESPAN;
-            defense_object = defense_find_current_object(self, NULL, attack.attack_type);
-            self->takedamage(self, &attack, 0, defense_object);
+            self->takedamage(self, self, &attack, 0, defense_object);
         }
-        return 1;
-    }//else
+        return true;
+    }
 
     // Doom count down
-    if(!is_frozen(self) && self->lifespancountdown != LIFESPAN_DEFAULT)
-    {
+    if(!is_frozen(self) && self->lifespancountdown != LIFESPAN_DEFAULT) {
         self->lifespancountdown--;
     }
 
-    return 0;
+    return false;
 }
 
 // grab walk check
@@ -30473,7 +30345,7 @@ void adjust_bind(entity* acting_entity)
 	#define ADJUST_BIND_NO_FRAME_MATCH -1   
 
     int				frame = 0;
-    e_animations	animation = ANI_NONE;
+    animation_id_t animation = ANI_NONE;
 
 	/* 
     * Exit if there is no bind 
@@ -31996,7 +31868,7 @@ int set_riseattack(entity *iRiseattack, int type, int reset)
 
 int set_blockpain(entity *ent, e_attack_types attack_type, int reset)
 {
-    e_animations animation;
+    animation_id_t animation;
 
     // If attack type is out of bounds we
     // just use normal.
@@ -33230,21 +33102,19 @@ int death_try_sequence_damage(entity* acting_entity, e_death_config_flags death_
     return result;
 }
 
-void common_lie()
-{
+void common_lie() {
+
     entity* acting_entity = self;
     e_death_config_flags death_config;
-    s_defense* defense_object;
-
+    
     // Died?
-    if(acting_entity->energy_state.health_current <= 0)
-    {        
-        defense_object = defense_find_current_object(acting_entity, NULL, acting_entity->last_damage_type);
+    if(acting_entity->energy_state.health_current <= 0) {
+
+        const s_defense* defense_object = defense_find_current_object(acting_entity, NULL, acting_entity->last_damage_type);
         
         death_config = defense_object->death_config_flags;
 
-        if (death_config & DEATH_CONFIG_SOURCE_MODEL)
-        {
+        if (death_config & DEATH_CONFIG_SOURCE_MODEL) {
             death_config = acting_entity->modeldata.death_config_flags;
         }
 
@@ -33253,15 +33123,13 @@ void common_lie()
         /*
         * Apply KO (death) map if we have one.
         */
-        if (acting_entity->modeldata.colorsets.ko != COLORSET_INDEX_NONE)
-        {   
+        if (acting_entity->modeldata.colorsets.ko != COLORSET_INDEX_NONE) {   
             /* 
             * Wait for animation to finish unless type is set to
             * apply map immediately.
             */
             
-            if (acting_entity->modeldata.colorsets.kotype == KO_COLORSET_CONFIG_INSTANT || !acting_entity->animating)
-            {
+            if (acting_entity->modeldata.colorsets.kotype == KO_COLORSET_CONFIG_INSTANT || !acting_entity->animating) {
                 acting_entity->colourmap = model_get_colourmap(&(acting_entity->modeldata), acting_entity->modeldata.colorsets.ko);
             }
         }
@@ -33269,8 +33137,7 @@ void common_lie()
         return;
     }
 
-    if(_time < acting_entity->stalltime || acting_entity->position.y != acting_entity->base || acting_entity->velocity.y)
-    {
+    if(_time < acting_entity->stalltime || acting_entity->position.y != acting_entity->base || acting_entity->velocity.y) {
         return;
     }
 
@@ -33383,9 +33250,9 @@ void dograbattack(int which)
 // Choose appropriate grab finish animation
 // or do nothing if we can't find one. Returns
 // selected animation.
-e_animations do_grab_attack_finish(entity *ent, int which)
+animation_id_t do_grab_attack_finish(entity *ent, int which)
 {
-    e_animations animation;
+    animation_id_t animation;
 
     // Clear out the combostep array since this is
     // the finishing attack.
@@ -33437,7 +33304,7 @@ void common_grab_check()
 
     if(!nolost && self->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_GRABBING)
     {
-        dropweapon(1);
+        dropweapon(self, 1);
     }
 
     self->attacking = ATTACKING_NONE; //for checking
@@ -33748,55 +33615,55 @@ entity *drop_driver(entity *e)
 }
 
 
-void checkdeath()
+void checkdeath(entity* target_entity)
 {
-    if(self->energy_state.health_current > 0)
+    if(target_entity->energy_state.health_current > 0)
     {
         return;
     }
-    self->death_state |= DEATH_STATE_DEAD;
+    target_entity->death_state |= DEATH_STATE_DEAD;
     
     /* Killed in the air? */
-    if (inair(self))
+    if (inair(target_entity))
     {
-        self->death_state |= DEATH_STATE_AIR;
+        target_entity->death_state |= DEATH_STATE_AIR;
     }
 
     /* In the back? D*** move banner! */
-    if (self->inbackpain)
+    if (target_entity->inbackpain)
     {
-        self->death_state |= DEATH_STATE_BACK;
+        target_entity->death_state |= DEATH_STATE_BACK;
     }
     
     //be careful, since the opponent can be other types
-    if(self->opponent && (self->opponent->modeldata.type & TYPE_PLAYER))
+    if(target_entity->opponent && (target_entity->opponent->modeldata.type & TYPE_PLAYER))
     {
-        addscore(self->opponent->playerindex, self->modeldata.score);    // Add score to the player
+        addscore(target_entity->opponent->playerindex, target_entity->modeldata.score);    // Add score to the player
     }
-    self->nograb = 1;
-    self->idling = IDLING_NONE;
-    self->ducking = DUCK_NONE;
+    target_entity->nograb = 1;
+    target_entity->idling = IDLING_NONE;
+    target_entity->ducking = DUCK_NONE;
 
-    if(self->modeldata.diesound >= 0)
+    if(target_entity->modeldata.diesound >= 0)
     {
-        sound_play_sample(self->modeldata.diesound, 0, savedata.effectvol, savedata.effectvol, 100);
+        sound_play_sample(target_entity->modeldata.diesound, 0, savedata.effectvol, savedata.effectvol, 100);
     }
 
     // Drop an item if we have one.
-    if(self->item_properties)
+    if(target_entity->item_properties)
     {
-        if(count_ents(TYPE_PLAYER) > self->item_properties->player_count)
+        if(count_ents(TYPE_PLAYER) > target_entity->item_properties->player_count)
         {
-            drop_item(self);
+            drop_item(target_entity);
         }
     }
 
 
-    if(self->boss)
+    if(target_entity->boss)
     {
-        self->boss = 0;
+        target_entity->boss = 0;
         --level->bossescount;
-        if(level->bossescount <= 0 && (self->modeldata.type & TYPE_ENEMY))
+        if(level->bossescount <= 0 && (target_entity->modeldata.type & TYPE_ENEMY))
         {
             kill_all_enemies();
             level_completed = 1;
@@ -33805,7 +33672,7 @@ void checkdeath()
     }
 }
 
-void checkdamageflip(entity* target_entity, entity *other, s_attack *attack_object, s_defense* defense_object)
+void checkdamageflip(entity* target_entity, entity *other, s_attack *attack_object, const s_defense* defense_object)
 {
     /* Debuging info */
     //attack_dump_object(attack_object);
@@ -33964,7 +33831,7 @@ void checkdamageflip(entity* target_entity, entity *other, s_attack *attack_obje
     
 }
 
-void checkdamageeffects(s_attack *attack)
+void checkdamageeffects(entity* target_entity, s_attack* attack)
 {
 #define _freeze         attack->freeze
 #define _maptime        attack->maptime
@@ -33977,21 +33844,21 @@ void checkdamageeffects(s_attack *attack)
 #define _staydown_rise			attack->staydown.rise
 #define _staydown_rise_attack	attack->staydown.riseattack
 
-    entity *opp = self->opponent;
+    entity *opp = target_entity->opponent;
 
 	// Steal. Take HP from the entity and add it to attacker.
-    if(_steal && opp && opp != self)
+    if(_steal && opp && opp != target_entity)
     {
 		// If we have enough HP to withstand the attack, give attacker
 		// the same amount as attack force. Otherwise just give them 
 		// whatever HP we have left.
-		if(self->energy_state.health_current >= attack->attack_force)
+		if(target_entity->energy_state.health_current >= attack->attack_force)
         {
             opp->energy_state.health_current += attack->attack_force;
         }
         else
         {
-            opp->energy_state.health_current += self->energy_state.health_current;
+            opp->energy_state.health_current += target_entity->energy_state.health_current;
         }
 
 		// Cap the effect so attacker doesn't go over their maximum HP.
@@ -34005,14 +33872,14 @@ void checkdamageeffects(s_attack *attack)
 	// not already frozen, apply a freeze effect and possibly 
 	// remap to freeze palette. If we ARE frozen, then
 	// unfreeze and knock down instead.
-    if(_freeze && !self->frozen)
+    if(_freeze && !target_entity->frozen)
     {
         
 		// Set freeze status and expire time.
-        self->frozen = 1;
-        if(self->freezetime == 0)
+        target_entity->frozen = 1;
+        if(target_entity->freezetime == 0)
         {
-            self->freezetime = _time + _freezetime;
+            target_entity->freezetime = _time + _freezetime;
         }
 
 		// 2007-12-14 
@@ -34020,17 +33887,17 @@ void checkdamageeffects(s_attack *attack)
 		//
 		// If opponents frozen map = -1 or only stun, then don't change the color map.
 
-        if(_remap == -1 && self->modeldata.colorsets.frozen != -1)
+        if(_remap == -1 && target_entity->modeldata.colorsets.frozen != -1)
         {
-            self->colourmap = model_get_colourmap(&(self->modeldata), self->modeldata.colorsets.frozen);
+            target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), target_entity->modeldata.colorsets.frozen);
         }
 
-        self->drop = 0;
+        target_entity->drop = 0;
     }
-    else if(self->frozen)
+    else if(target_entity->frozen)
     {
-        unfrozen(self);
-        self->drop = 1;
+        unfrozen(target_entity);
+        target_entity->drop = 1;
     }
 
 	// If we want to apply a remap without freezing (forcemap attack command) then
@@ -34051,74 +33918,74 @@ void checkdamageeffects(s_attack *attack)
         switch (_remap)
         {
             case MAP_TYPE_BURN:
-                if (self->modeldata.colorsets.burn != COLORSET_INDEX_NONE)
+                if (target_entity->modeldata.colorsets.burn != COLORSET_INDEX_NONE)
                 {
-                    self->colourmap = model_get_colourmap(&(self->modeldata), self->modeldata.colorsets.burn);
+                    target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), target_entity->modeldata.colorsets.burn);
                 }
                 break;
             case MAP_TYPE_FREEZE:
-                if (self->modeldata.colorsets.frozen != COLORSET_INDEX_NONE)
+                if (target_entity->modeldata.colorsets.frozen != COLORSET_INDEX_NONE)
                 {
-                    self->colourmap = model_get_colourmap(&(self->modeldata), self->modeldata.colorsets.frozen);
+                    target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), target_entity->modeldata.colorsets.frozen);
                 }
                 break;
             case MAP_TYPE_KO:
-                if (self->modeldata.colorsets.ko != COLORSET_INDEX_NONE)
+                if (target_entity->modeldata.colorsets.ko != COLORSET_INDEX_NONE)
                 {
-                    self->colourmap = model_get_colourmap(&(self->modeldata), self->modeldata.colorsets.ko);
+                    target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), target_entity->modeldata.colorsets.ko);
                 }
                 break;
             case MAP_TYPE_SHOCK:
-                if (self->modeldata.colorsets.shock != COLORSET_INDEX_NONE)
+                if (target_entity->modeldata.colorsets.shock != COLORSET_INDEX_NONE)
                 {
-                    self->colourmap = model_get_colourmap(&(self->modeldata), self->modeldata.colorsets.shock);
+                    target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), target_entity->modeldata.colorsets.shock);
                 }
                 break;
             default:
-                self->colourmap = model_get_colourmap(&(self->modeldata), _remap);
+                target_entity->colourmap = model_get_colourmap(&(target_entity->modeldata), _remap);
                 break;
         }
 
-        self->maptime = _time + _maptime;        
+        target_entity->maptime = _time + _maptime;
     }
 
 	// Disable specials. Apply seal (Any animation with 
 	// energy_cost > seal) is disabled and time to expire.
     if(_seal)                                                                       
     {
-        self->sealtime  = _time + _sealtime;
-        self->seal      = _seal;
+        target_entity->sealtime  = _time + _sealtime;
+        target_entity->seal      = _seal;
     }
 
 	// Apply any recursive (damage over time) effects.
-	recursive_effect_check_apply(self, opp, attack);
+	recursive_effect_check_apply(target_entity, opp, attack);
 
 	// Static enemies/nodrop enemies cannot be knocked down
-    if(self->modeldata.pain_config_flags & PAIN_CONFIG_FALL_DISABLE)
+    if(target_entity->modeldata.pain_config_flags & PAIN_CONFIG_FALL_DISABLE)
     {
-        self->drop = 0;    
+        target_entity->drop = 0;
     }
 
 	// Always knock airborne entities down unless we're freezeing them
 	// or they are specfically immune to in air knockdowns.
-    if(inair(self) && !self->frozen && !(self->modeldata.pain_config_flags & PAIN_CONFIG_FALL_DISABLE_AIR))
+    if(inair(target_entity) && !target_entity->frozen && !(target_entity->modeldata.pain_config_flags & PAIN_CONFIG_FALL_DISABLE_AIR))
     {
-        self->drop = 1;
+        target_entity->drop = 1;
     }
 
 	// Immune to hit stun? No knockdown either.
     if(attack->no_pain)
     {
-        self->drop = 0;
+        target_entity->drop = 0;
     }
 
 	// If entity will be knocked down, let's apply knockdown specific effects here.
-    if(self->drop)
+    if(target_entity->drop)
     {
-		self->projectile = _blast;
+		target_entity->projectile = _blast;
 
-        self->staydown.rise	= _staydown_rise;                                            //Staydown: Add to risetime until next rise.
-        self->staydown.riseattack   = _staydown_rise_attack;
+        target_entity->staydown.rise	= _staydown_rise;                                            //Staydown: Add to risetime until next rise.
+        target_entity->staydown.riseattack   = _staydown_rise_attack;
     }
 
 #undef _freeze
@@ -34148,7 +34015,7 @@ void checkdamageeffects(s_attack *attack)
 * Accepts defense object to pass on into
 * total damage calculation functions.
 */ 
-void checkdamagedrop(entity* target_entity, s_attack* attack_object, s_defense* defense_object)
+void checkdamagedrop(entity* target_entity, s_attack* attack_object, const s_defense* defense_object)
 {
     int attack_drop = attack_object->attack_drop;
     float defense_knockdown = defense_object->knockdown;
@@ -34212,10 +34079,10 @@ void checkdamagedrop(entity* target_entity, s_attack* attack_object, s_defense* 
     }
 }
 
-void checkmpadd()
+void checkmpadd(entity* target_entity)
 {
-    entity *other = self->opponent;
-    if(other == NULL || other == self)
+    entity *other = target_entity->opponent;
+    if(other == NULL || other == target_entity)
     {
         return;
     }
@@ -34235,25 +34102,25 @@ void checkmpadd()
     }
 }
 
-void checkhitscore(entity *other, s_attack *attack)
+void checkhitscore(entity* target_entity, entity* attacking_entity, s_attack* attack_object)
 {
-    entity *opp = self->opponent;
+    entity *opp = target_entity->opponent;
     if(!opp)
     {
         return;
     }
-    if(opp && opp != self && (opp->modeldata.type & TYPE_PLAYER))
+    if(opp != target_entity && (opp->modeldata.type & TYPE_PLAYER))
     {
         // Added obstacle so explosions can hurt enemies
-        addscore(opp->playerindex, attack->attack_force * self->modeldata.multiple);  // New multiple variable
-        if (savedata.joyrumble[opp->playerindex]) control_rumble(opp->playerindex, 1, attack->attack_force * 2);
+        addscore(opp->playerindex, attack_object->attack_force * target_entity->modeldata.multiple);  // New multiple variable
+        if (savedata.joyrumble[opp->playerindex]) control_rumble(opp->playerindex, 1, attack_object->attack_force * 2);
     }
     // Don't animate or fall if hurt by self, since
     // it means self fell to the ground already. :)
     // Add throw score to the player
-    else if(other == self && self->damage_on_landing.attack_force > 0)
+    else if(attacking_entity == target_entity && target_entity->damage_on_landing.attack_force > 0)
     {
-        addscore(opp->playerindex, attack->attack_force);
+        addscore(opp->playerindex, attack_object->attack_force);
     }
 }
 
@@ -35117,107 +34984,65 @@ int offense_result_damage(s_offense* offense_object, int attack_force)
 /*
 * Caskey, Damon V.
 * 2021-09-08
-* 
-* Get damage after applying defense adjustments.
-* 
-* Note: We send damage separately from attack object
-* as we usually want to get a calculated value
-* without modifying the original property.
+*
+* Return final damage output from
+* after defense adjustments. If the attack
+* was blocked, then the block ratio and
+* block damage adjustments are applied. If
+* the attack was not blocked, then the defense
+* factor and damage adjustments are applied.
 */
-int defense_result_damage(s_defense* defense_object, int attack_force, int blocked)
-{   
-    const float DEFENSE_GLOBAL_BLOCK_RATIO = 0.25;
+int64_t defense_result_damage(const s_defense* defense_object, int64_t attack_force, bool blocked) {
+    const float DEFENSE_GLOBAL_BLOCK_RATIO = 0.25f;
 
-    //printf("\n\n defense_result_damage(%p, %p, %d, %d)", defense_object, attack_force, blocked);
-    
-    int result = attack_force;
-    float ratio = 0.0;
-    int damage_adjust = 0;
-    int damage_min = MIN_INT;
-    int damage_max = MAX_INT;
+    int64_t result = attack_force;
+    float ratio = 0.0f;
+    int64_t damage_adjust = 0;
+    int64_t damage_min = INT64_MIN;
+    int64_t damage_max = INT64_MAX;
 
-    /* 
-    * If there's no defense object, then
-    * fall back to default defense.
+    /*
+    * Fall back to global default if defense
+    * object is NULL.
     */
+    const s_defense* const defense_object_local = defense_object ? defense_object : &default_defense;
 
-    if (!defense_object)
-    {
-        defense_object = (s_defense*)&default_defense;
+    /*
+    * Get the ratio and adjustments for a hit
+    * or successfully blocked attack.
+    */
+    if (blocked) {
+        if (defense_object_local->blockratio ==
+            DEFENSE_BLOCKRATIO_COMPATABILITY_DEFAULT) {
+            ratio = global_config.block_ratio
+                ? DEFENSE_GLOBAL_BLOCK_RATIO
+                : 0.0f;
+        } else {
+            ratio = defense_object_local->blockratio;
+        }
+
+        damage_adjust = defense_object_local->block_damage_adjust;
+        damage_min = defense_object_local->block_damage_min;
+        damage_max = defense_object_local->block_damage_max;
+    } else {
+        ratio = defense_object_local->factor;
+        damage_adjust = defense_object_local->damage_adjust;
+        damage_min = defense_object_local->damage_min;
+        damage_max = defense_object_local->damage_max;
     }
 
     /*
-    * We have a defense object, so get the
-    * ratio and adjustments for hit or block.
+    * Apply ratio, round to the nearest whole damage
+    * value, apply adjustment, and enforce bounds.
     */
-
-    if (blocked)
-    {
-        /*
-        * We want blockratio to default as 0.0 and 
-        * also override the legacy global blockratio 
-        * setting with local defense values. However,
-        * a value of 0.0 is too ambiguous. We can't 
-        * tell if it was intentional from the creator 
-        * or they just left defense blank. 
-        * 
-        * We could dynamically allocate defense and 
-        * then check for valid pointers, but that would 
-        * add several failure points and increase the
-        * complexity for creators.
-        * 
-        * Instead, we use an impractical default value. 
-        * If that value is still in place here, we know 
-        * the creator did not define defense and we can 
-        * apply a real default of 0.0, or 
-        when the
-        * legacy global blockratio is enabled.
-        */
-
-        if (defense_object->blockratio == DEFENSE_BLOCKRATIO_COMPATABILITY_DEFAULT)
-        {
-            if (global_config.block_ratio)
-            {
-                ratio = DEFENSE_GLOBAL_BLOCK_RATIO;
-            }
-            else
-            {
-                ratio = 0.0;
-            }
-        }
-        else
-        {
-            ratio = defense_object->blockratio;
-        }
-               
-        damage_adjust = defense_object->block_damage_adjust;
-        damage_min = defense_object->block_damage_min;
-        damage_max = defense_object->block_damage_max;
-    }
-    else
-    {
-        ratio = defense_object->factor;
-        damage_adjust = defense_object->damage_adjust;
-        damage_min = defense_object->damage_min;
-        damage_max = defense_object->damage_max;
-    }
-
-    /*
-    * Apply ratio, then adjustment, and
-    * cap the result to min/max.
-    */
-
-    result = (int)(result * ratio);
-
+    result = (int64_t)round((double)result * ratio);
     result += damage_adjust;
 
-    if (result < damage_min)
-    {
+    if (result < damage_min) {
         result = damage_min;
     }
 
-    if (result > damage_max)
-    {
+    if (result > damage_max) {
         result = damage_max;
     }
 
@@ -35231,10 +35056,10 @@ int defense_result_damage(s_defense* defense_object, int attack_force, int block
 * Return true if entity should enter pain reaction
 * after applying defense pain property.
 */
-int defense_result_pain(s_attack* attack_object, s_defense* defense_object)
+int defense_result_pain(s_attack* attack_object, const s_defense* defense_object)
 {
-    int attack_force = attack_object->attack_force;
-    e_attack_types attack_type = attack_object->attack_type;
+    const int attack_force = attack_object->attack_force;
+    const attack_type_t attack_type = attack_object->attack_type;
 
     /*
     * Make sure attack types are in bounds and defense
@@ -35246,7 +35071,7 @@ int defense_result_pain(s_attack* attack_object, s_defense* defense_object)
         return 1;
     }
 
-    if (attack_type < 0 || attack_type > max_attack_types)
+    if (attack_type >= (attack_type_t)max_attack_types)
     {
         return 1;
     }
@@ -35298,14 +35123,21 @@ int defense_result_pain(s_attack* attack_object, s_defense* defense_object)
 * 
 * 3. Global defense_default constant.
 */
-s_defense* defense_find_current_object(entity* ent, s_body* body_object, e_attack_types attack_type)
-{    
+const s_defense* defense_find_current_object(const entity* ent, const s_body* body_object, const attack_type_t attack_type) {    
     //printf("\n\n defense_find_current_object(%p, %p, %d)", ent, body_object, attack_type);
+
+    /*
+    * Runtime attack types may include creator-defined
+    * values, but they must remain within the configured
+    * defense collection capacity.
+    */
+    if (attack_type >= (attack_type_t)max_attack_types) {
+        return &default_defense;
+    }
     
      /* Supplied body. */
 
-    if (body_object && body_object->defense)
-    {   
+    if (body_object && body_object->defense) {   
         //printf("\n\t &body_object->defense[%d]: %p", attack_type, &body_object->defense[attack_type]);
 
         return &body_object->defense[attack_type];
@@ -35313,23 +35145,17 @@ s_defense* defense_find_current_object(entity* ent, s_body* body_object, e_attac
 
     /* Entity defense */
 
-    if (ent->defense)
-    {
+    if (ent && ent->defense) {
         //printf("\n\t ent->defense: %p", &ent->defense[attack_type]);
 
         return &ent->defense[attack_type];
     }
 
-    /* 
-    * Global default. We're recasting a
-    * a constant to return its pointer, so 
-    * we need to be careful and avoid mutating 
-    * any values downstream.
-    */
+    /* Global default. */
 
-    //printf("\n\t &default_defense: %p", (s_defense*)&default_defense);
+    //printf("\n\t &default_defense: %p", &default_defense);
 
-    return (s_defense *)&default_defense;
+    return &default_defense;
 }
 
 // attack_type_map.h
@@ -35618,7 +35444,7 @@ void defense_setup_from_arg(
 * 
 * Dump object data to log.
 */
-void defense_dump_object(s_defense* object)
+void defense_dump_object(const s_defense* object)
 {
     const int space_label = 20;
 
@@ -35814,8 +35640,7 @@ void offense_apply_setup_to_property(char* filename, char* command, s_offense* o
     }
 }
 
-int calculate_force_damage(entity *target, entity *attacker, s_attack *attack_object, s_defense* defense_object, const bool blocked)
-{
+int calculate_force_damage(entity *target, entity *attacker, s_attack *attack_object, const s_defense* defense_object, const bool blocked) {
     //printf("\n\n calculate_force_damage(%p, %p, %p, %p, %d)", target, attacker, attack_object, defense_object, blocked);
 
     int force = attack_object->attack_force;
@@ -35829,10 +35654,8 @@ int calculate_force_damage(entity *target, entity *attacker, s_attack *attack_ob
     * games use defense to make entities immortal for special
     * uses and we don't want to break that.
     */
-    if (global_config.cheats & CHEAT_OPTIONS_TOD_ACTIVE && attacker->modeldata.type & TYPE_PLAYER)
-    {
-        if (force < target->energy_state.health_current)
-        {
+    if (global_config.cheats & CHEAT_OPTIONS_TOD_ACTIVE && attacker->modeldata.type & TYPE_PLAYER) {
+        if (force < target->energy_state.health_current) {
             force = target->energy_state.health_current;
         }
     }
@@ -35868,7 +35691,11 @@ int calculate_force_damage(entity *target, entity *attacker, s_attack *attack_ob
     */
 
     if (!defense_object) {
-        defense_object = target->defense;
+        defense_object = defense_find_current_object(
+            target,
+            NULL,
+            attack_object->attack_type
+        );
     }
 
     force = defense_result_damage(defense_object, force, blocked);
@@ -35878,22 +35705,20 @@ int calculate_force_damage(entity *target, entity *attacker, s_attack *attack_ob
     return force;
 }
 
-void checkdamageonlanding(entity* acting_entity)
-{
+void checkdamageonlanding(entity* acting_entity) {
+
     //printf("\n\n checkdamageonlanding(%p)", acting_entity);
 
-    s_defense* defense_object = NULL;
     s_attack attack = emptyattack;
     entity* other = NULL;
     int didhit = 0;
 
-    if (acting_entity->energy_state.health_current <= 0)
-    {
+    if (acting_entity->energy_state.health_current <= 0) {
         return;
     }
 
-    if((acting_entity->damage_on_landing.attack_force > 0 && !(acting_entity->death_state & DEATH_STATE_DEAD)))
-    {    
+    if((acting_entity->damage_on_landing.attack_force > 0 && !(acting_entity->death_state & DEATH_STATE_DEAD))) {    
+        
         //##################
         attack.attack_force = acting_entity->damage_on_landing.attack_force;
         
@@ -35903,12 +35728,10 @@ void checkdamageonlanding(entity* acting_entity)
         * fall back to ATK_LAND.
         */
 
-        if (attack.damage_on_landing.attack_type >= 0)
-        {
+        if (attack.damage_on_landing.attack_type >= 0) {
             attack.attack_type = acting_entity->damage_on_landing.attack_type;
-        }
-        else
-        {
+        
+        } else {
             attack.attack_type = ATK_LAND;
         }
 
@@ -35918,12 +35741,10 @@ void checkdamageonlanding(entity* acting_entity)
         * not, we use ourselves.
         */
 
-        if (acting_entity->opponent && acting_entity->opponent->exists && !(acting_entity->opponent->death_state & DEATH_STATE_DEAD) && acting_entity->opponent->energy_state.health_current > 0)
-        {
+        if (acting_entity->opponent && acting_entity->opponent->exists && !(acting_entity->opponent->death_state & DEATH_STATE_DEAD) && acting_entity->opponent->energy_state.health_current > 0) {
             other = acting_entity->opponent;
-        }
-        else
-        {
+        
+        } else {
             other = acting_entity;
         }
 
@@ -35933,7 +35754,7 @@ void checkdamageonlanding(entity* acting_entity)
         lasthit.position.y = acting_entity->position.y;
         lasthit.position.z = acting_entity->position.z;
 
-        defense_object = defense_find_current_object(acting_entity, NULL, attack.attack_type);
+        const s_defense* defense_object = defense_find_current_object(acting_entity, NULL, attack.attack_type);
 
         //defense_dump_object(defense_object);
 
@@ -35946,8 +35767,7 @@ void checkdamageonlanding(entity* acting_entity)
         //printf("\n\tattack.attack_type: %d", attack.attack_type);
         //printf("\n\tattack.attack_force: %d", attack.attack_force);
         
-        if(lasthit.confirm)
-        {
+        if(lasthit.confirm) {
             didhit = 1;
         }
 
@@ -35955,8 +35775,7 @@ void checkdamageonlanding(entity* acting_entity)
         * Can't take damage if we're dead.
         */
 
-        if(acting_entity->death_state & DEATH_STATE_DEAD)
-        {
+        if(acting_entity->death_state & DEATH_STATE_DEAD) {
             return;
         }
 
@@ -35965,44 +35784,40 @@ void checkdamageonlanding(entity* acting_entity)
         * landing. We don't want them to take damage.
         */
 
-        if(acting_entity->toexplode & (EXPLODE_DETONATE_HIT | EXPLODE_DETONATE_DAMAGED))
-        {
+        if(acting_entity->toexplode & (EXPLODE_DETONATE_HIT | EXPLODE_DETONATE_DAMAGED)) {
             return;
         }
 
         // fake 'grab', if failed, return as the attack hit nothing
-        if(!checkgrab(other, &attack))
-        {
+        if(!checkgrab(acting_entity, other, &attack))  {
             return;    // try to grab but failed, so return 0 means attack missed
         }
 
-        if(acting_entity != other)
-        {
+        if(acting_entity != other) {
             set_opponent(acting_entity, other);
         }
         
         //##################
 
-        if (didhit)
-        {           
+        if (didhit) {
+
             // pre-check drop
             checkdamagedrop(acting_entity, &attack, defense_object);
 
             // Drop Weapon due to being hit.
-            if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_LAND_DAMAGE)
-            {
-                dropweapon(1);
+            if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_LAND_DAMAGE) {
+                dropweapon(acting_entity, 1);
             }
+
             // check effects, e.g., frozen, blast, steal
-            if(!(acting_entity->modeldata.guardpoints > 0 && acting_entity->guardpoints <= 0))
-            {
-                checkdamageeffects(&attack);
+            if(!(acting_entity->modeldata.guardpoints > 0 && acting_entity->guardpoints <= 0)) {
+                checkdamageeffects(acting_entity, &attack);
             }
 
             // mprate can also control the MP recovered per hit.
-            checkmpadd();
+            checkmpadd(acting_entity);
             //damage score
-            checkhitscore(other, &attack);
+            checkhitscore(acting_entity, other, &attack);
 
             /*
             * Applies the damage. Send NULL as body object so
@@ -36012,13 +35827,12 @@ void checkdamageonlanding(entity* acting_entity)
             checkdamage(acting_entity, other, &attack, defense_object);            
 
             // is it dead now?
-            checkdeath();
+            checkdeath(acting_entity);
 
             execute_didhit_script(other, acting_entity, &attack, 0);
         }
 
-        if (acting_entity->energy_state.health_current <= 0)
-        {
+        if (acting_entity->energy_state.health_current <= 0) {
             acting_entity->die_on_landing = 1;
         }
 
@@ -36030,39 +35844,39 @@ void checkdamageonlanding(entity* acting_entity)
     if( (acting_entity->die_on_landing && !(acting_entity->death_state & DEATH_STATE_DEAD)) &&
         ((!tobounce(acting_entity) && acting_entity->modeldata.bounce) || !acting_entity->modeldata.bounce) &&
         (acting_entity->velocity.x == 0 && acting_entity->velocity.z == 0 && acting_entity->velocity.y == 0)
-      )
-    {
-        if(acting_entity->takedamage)
-        {
+      ) {
+        
+        if(acting_entity->takedamage) {
+
             //##################
             s_attack attack = emptyattack;
             entity *other;
 
             attack.attack_force = acting_entity->damage_on_landing.attack_force;
-            if (attack.damage_on_landing.attack_type >= 0) attack.attack_type  = acting_entity->damage_on_landing.attack_type;
-            else attack.attack_type  = ATK_LAND;
-
-            if (acting_entity->opponent && acting_entity->opponent->exists && !(acting_entity->opponent->death_state & DEATH_STATE_DEAD) && acting_entity->opponent->energy_state.health_current > 0)
-            {
-                other = acting_entity->opponent;
+            if (attack.damage_on_landing.attack_type >= 0) { 
+                attack.attack_type  = acting_entity->damage_on_landing.attack_type;
+            
+            } else {
+                attack.attack_type  = ATK_LAND;
             }
-            else
-            {
+
+            if (acting_entity->opponent && acting_entity->opponent->exists && !(acting_entity->opponent->death_state & DEATH_STATE_DEAD) && acting_entity->opponent->energy_state.health_current > 0) {
+                other = acting_entity->opponent;
+            
+            } else {
                 other = acting_entity;
             }
             //##################
 
-            defense_object = defense_find_current_object(other, NULL, attack.attack_type);
+            const s_defense* other_defense_object = defense_find_current_object(other, NULL, attack.attack_type);
             
-            acting_entity->takedamage(other, &attack, 1, defense_object);
-        }
-        else
-        {
+            acting_entity->takedamage(acting_entity, other, &attack, 1, other_defense_object);
+        
+        } else {
             kill_entity(acting_entity, KILL_ENTITY_TRIGGER_DAMAGE_ON_LANDING);
         }
         
-        if (acting_entity)
-        {
+        if (acting_entity) {
             acting_entity->damage_on_landing.attack_force = 0;
             acting_entity->damage_on_landing.attack_type = ATK_NONE;
             acting_entity->die_on_landing = 0;
@@ -36131,28 +35945,26 @@ int is_attack_type_special(e_attack_types type)
 * Accepts defense object to pass on into
 * total damage calculation functions.
 */
-void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, s_defense* defense_object)
+void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, const s_defense* defense_object)
 { 
     //printf("\n\n checkdamage(%p, %p, %p, %p)", target_entity, attacking_entity, attack_object, defense_object);
 
-	int	force = 0;
-	int	normal_damage = 0;    
+	int64_t	force = 0;
 
 	/* Get attack damage force after defense is applied. */
-    force = calculate_force_damage(target_entity, attacking_entity, attack_object, defense_object, FALSE);
+    force = calculate_force_damage(target_entity, attacking_entity, attack_object, defense_object, false);
 
     /*
 	* Damage does not return HP and comes from
 	* a normal source?
 	*/
-    normal_damage = (!is_attack_type_special(attack_object->attack_type) && force >= 0);
+    const bool normal_damage = (!is_attack_type_special(attack_object->attack_type) && force >= 0) ? true : false;
 
 	/* 
     * If we're invincible to normal damage 
     * sources, laugh it off.
 	*/
-    if (target_entity->invincible & INVINCIBLE_HP_NULLIFY && normal_damage)
-	{
+    if (target_entity->invincible & INVINCIBLE_HP_NULLIFY && normal_damage)	{
 		force = 0;
 	}
 	
@@ -36167,13 +35979,11 @@ void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* atta
 
     target_entity->energy_state.health_current -= force;
 
-	if (target_entity->energy_state.health_current > target_entity->modeldata.health)
-    {
+	if (target_entity->energy_state.health_current > target_entity->modeldata.health) {
         target_entity->energy_state.health_current = target_entity->modeldata.health;
     }
 
-    if(attack_object->no_kill && target_entity->energy_state.health_current <= 0)
-    {
+    if(attack_object->no_kill && target_entity->energy_state.health_current <= 0) {
         target_entity->energy_state.health_current = 1;
     }
 
@@ -36185,17 +35995,14 @@ void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* atta
     * death script, but may reset HP according
     * to invincibility flags.
     */
-    if (target_entity->energy_state.health_current <= 0)
-    {
-		if(normal_damage)
-        {
-			if (target_entity->invincible & INVINCIBLE_HP_MINIMUM)
-            {
+    if (target_entity->energy_state.health_current <= 0) {
+		
+        if(normal_damage) {
+			if (target_entity->invincible & INVINCIBLE_HP_MINIMUM) {
                 target_entity->energy_state.health_current = 1;
             }
             
-			if(target_entity->invincible & INVINCIBLE_HP_RESET)
-            {
+			if(target_entity->invincible & INVINCIBLE_HP_RESET) {
                 target_entity->energy_state.health_current = target_entity->modeldata.health;
             }
         }
@@ -36204,15 +36011,15 @@ void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* atta
     }
 }
 
-int checkgrab(entity *other, s_attack *attack)
+int checkgrab(entity* target_entity, entity* attacking_entity, s_attack* attack_object)
 {
     //if(attack->no_pain) return  0; //no effect, let modders to deside, don't bother check it here
-    if(self != other && attack->grab && check_cangrab(other, self))
+    if(target_entity != attacking_entity && attack_object->grab && check_cangrab(attacking_entity, target_entity))
     {
-        if(adjust_grabposition(other, self, attack->grab_distance, attack->grab))
+        if(adjust_grabposition(attacking_entity, target_entity, attack_object->grab_distance, attack_object->grab))
         {
-            ents_link(other, self);
-            self->position.y = other->position.y;
+            ents_link(attacking_entity, target_entity);
+            target_entity->position.y = attacking_entity->position.y;
         }
         else
         {
@@ -36222,107 +36029,118 @@ int checkgrab(entity *other, s_attack *attack)
     return 1;
 }
 
-int arrow_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object)
+int arrow_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object)
 {
-    self->modeldata.move_config_flags &= ~MOVE_CONFIG_NO_ADJUST_BASE;
-    self->modeldata.move_config_flags |= (MOVE_CONFIG_SUBJECT_TO_BASEMAP | MOVE_CONFIG_SUBJECT_TO_GRAVITY | MOVE_CONFIG_SUBJECT_TO_HOLE | MOVE_CONFIG_SUBJECT_TO_PLATFORM | MOVE_CONFIG_SUBJECT_TO_WALL);
+    target_entity->modeldata.move_config_flags &= ~MOVE_CONFIG_NO_ADJUST_BASE;
+    target_entity->modeldata.move_config_flags |= (MOVE_CONFIG_SUBJECT_TO_BASEMAP | MOVE_CONFIG_SUBJECT_TO_GRAVITY | MOVE_CONFIG_SUBJECT_TO_HOLE | MOVE_CONFIG_SUBJECT_TO_PLATFORM | MOVE_CONFIG_SUBJECT_TO_WALL);
 
-    if( common_takedamage(other, attack, 0, defense_object) && self->death_state & DEATH_STATE_DEAD)
+    if(common_takedamage(target_entity, attacking_entity, attack_object, 0, defense_object)
+        && target_entity->death_state & DEATH_STATE_DEAD)
     {
         return 1;
     }
     return 0;
 }
 
-int common_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object)
+int common_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object)
 {   
-    entity* acting_entity = self;
-
     int pain_check = 0; // React with pain animations (1) or ignore (0);
     e_death_config_flags death_config;
+
+    /*
+    * Resolve callers that do not supply a body-specific
+    * defense object through the target's current defense.
+    */
+    if (!defense_object) {
+        defense_object = defense_find_current_object(
+            target_entity,
+            NULL,
+            attack_object->attack_type
+        );
+    }
     
-    if(acting_entity->death_state & DEATH_STATE_DEAD)
+    if(target_entity->death_state & DEATH_STATE_DEAD)
     {
         return 0;
     }
 
-    if(acting_entity->toexplode & (EXPLODE_DETONATE_HIT | EXPLODE_DETONATE_DAMAGED))
+    if(target_entity->toexplode & (EXPLODE_DETONATE_HIT | EXPLODE_DETONATE_DAMAGED))
     {
         return 0;
     }    
     
     // fake 'grab', if failed, return as the attack hit nothing
-    if(!checkgrab(other, attack))
+    if(!checkgrab(target_entity, attacking_entity, attack_object))
     {
         return 0;    // try to grab but failed, so return 0 means attack missed
     }
    
     // set oppoent
-    if(acting_entity != other)
+    if(target_entity != attacking_entity)
     {
-        set_opponent(acting_entity, other);
+        set_opponent(target_entity, attacking_entity);
     }
     
     // adjust type
-    if(attack->attack_type >= 0 && attack->attack_type < max_attack_types)
+    if(attack_object->attack_type >= 0 && attack_object->attack_type < max_attack_types)
     {
-        acting_entity->last_damage_type = attack->attack_type;
+        target_entity->last_damage_type = attack_object->attack_type;
     }
     else
     {
-        acting_entity->last_damage_type = ATK_NORMAL;
+        target_entity->last_damage_type = ATK_NORMAL;
     }
 
-    if (!acting_entity->die_on_landing)
+    if (!target_entity->die_on_landing)
     {        
         // pre-check drop
-        checkdamagedrop(acting_entity, attack, defense_object);
+        checkdamagedrop(target_entity, attack_object, defense_object);
 
         // Drop Weapon due to being hit.
-        if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_DAMAGE)
+        if(target_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_DAMAGE)
         {
-            dropweapon(1);
+            dropweapon(target_entity, 1);
         }
         // check effects, e.g., frozen, blast, steal
-        if(!(acting_entity->modeldata.guardpoints > 0 && acting_entity->guardpoints <= 0))
+        if(!(target_entity->modeldata.guardpoints > 0 && target_entity->guardpoints <= 0))
         {
-            checkdamageeffects(attack);
+            checkdamageeffects(target_entity, attack_object);
         }
     }
 
     // check backpain
-    check_backpain(other,acting_entity);
+    check_backpain(attacking_entity, target_entity);
     
     /* Check and apply direction flip. */
-    checkdamageflip(acting_entity, other, attack, defense_object);
+    checkdamageflip(target_entity, attacking_entity, attack_object, defense_object);
 
-    if (!acting_entity->die_on_landing)
+    if (!target_entity->die_on_landing)
     {
         // mprate can also control the MP recovered per hit.
-        checkmpadd();
+        checkmpadd(target_entity);
         //damage score
-        checkhitscore(other, attack);        
+        checkhitscore(target_entity, attacking_entity, attack_object);
         
         // check damage, cost hp.
-        checkdamage(acting_entity, other, attack, defense_object);
+        checkdamage(target_entity, attacking_entity, attack_object, defense_object);
 
         // is it dead now?
-        checkdeath();
+        checkdeath(target_entity);
     }
 
-    if(acting_entity->modeldata.type & TYPE_PLAYER)
+    if(target_entity->modeldata.type & TYPE_PLAYER)
     {
-        if (savedata.joyrumble[acting_entity->playerindex]) control_rumble(acting_entity->playerindex, 1, attack->attack_force * 3);
+        if (savedata.joyrumble[target_entity->playerindex]) control_rumble(target_entity->playerindex, 1, attack_object->attack_force * 3);
     }
-    if(acting_entity->position.y <= PIT_DEPTH && acting_entity->death_state & DEATH_STATE_DEAD)
+    if(target_entity->position.y <= PIT_DEPTH && target_entity->death_state & DEATH_STATE_DEAD)
     {
-        if(acting_entity->modeldata.type & TYPE_PLAYER)
+        if(target_entity->modeldata.type & TYPE_PLAYER)
         {
-            player_die();
+            player_die_entity(target_entity);
         }
         else
         {
-            kill_entity(acting_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_COMMON_PIT);
+            kill_entity(target_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_COMMON_PIT);
         }
         return 1;
     }
@@ -36334,33 +36152,33 @@ int common_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense*
         return 1;
     }*/
     // reset damageonlanding
-    acting_entity->damage_on_landing.attack_force = 0;
-    acting_entity->damage_on_landing.attack_type = ATK_NONE;
+    target_entity->damage_on_landing.attack_force = 0;
+    target_entity->damage_on_landing.attack_type = ATK_NONE;
 
 	// White Dragon: fix damage_on_landing bug
-	if(acting_entity->die_on_landing && acting_entity->energy_state.health_current <= 0)
+	if(target_entity->die_on_landing && target_entity->energy_state.health_current <= 0)
 	{
-		acting_entity->modeldata.death_config_flags |= DEATH_CONFIG_MACRO_DEATH_FALL_LAND;
+		target_entity->modeldata.death_config_flags |= DEATH_CONFIG_MACRO_DEATH_FALL_LAND;
 	}
 
     // unlink due to being hit
-    if((acting_entity->opponent && acting_entity->opponent->grabbing != acting_entity) // Have an opponent, but opponent is not grabbing me. 
-		|| acting_entity->death_state & DEATH_STATE_DEAD				// Dead.
-		|| acting_entity->frozen										// Frozen. 
-		|| acting_entity->drop)										// Knocked down.
+    if((target_entity->opponent && target_entity->opponent->grabbing != target_entity) // Have an opponent, but opponent is not grabbing me.
+		|| target_entity->death_state & DEATH_STATE_DEAD				// Dead.
+		|| target_entity->frozen										// Frozen.
+		|| target_entity->drop)										// Knocked down.
     {
-        ent_unlink(acting_entity);
+        ent_unlink(target_entity);
     }
     // Enemies can now use SPECIAL2 to escape cheap attack strings!
-    if(acting_entity->modeldata.escapehits)
+    if(target_entity->modeldata.escapehits)
     {
-        if(acting_entity->drop)
+        if(target_entity->drop)
         {
-            acting_entity->escapecount = 0;
+            target_entity->escapecount = 0;
         }
         else
         {
-            acting_entity->escapecount++;
+            target_entity->escapecount++;
         }
     }
 
@@ -36369,79 +36187,79 @@ int common_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense*
     * May also not react at all if attack doesn't 
     * cause pain or defense is enough to ignore it.
     */
-    pain_check = defense_result_pain(attack, defense_object);
+    pain_check = defense_result_pain(attack_object, defense_object);
     
-    if(acting_entity->drop || acting_entity->energy_state.health_current <= 0)
+    if(target_entity->drop || target_entity->energy_state.health_current <= 0)
     {
-        acting_entity->takeaction = common_fall;
+        target_entity->takeaction = common_fall;
         
         // Drop Weapon due to death.
-        if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_DEATH && acting_entity->energy_state.health_current <= 0)
+        if(target_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_DEATH && target_entity->energy_state.health_current <= 0)
         {
-            dropweapon(1);
+            dropweapon(target_entity, 1);
         }
-        else if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_FALL)
+        else if(target_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_FALL)
         {
-            dropweapon(1);
+            dropweapon(target_entity, 1);
         }
 
         death_config = defense_object->death_config_flags;
 
         if (death_config & DEATH_CONFIG_SOURCE_MODEL)
         {
-            death_config = acting_entity->modeldata.death_config_flags;
+            death_config = target_entity->modeldata.death_config_flags;
         }
 
         /* We're alive, or death sequence wants us to handle falling. */
-        if(acting_entity->energy_state.health_current > 0 || !death_try_sequence_damage(acting_entity, death_config, DEATH_TRY_SEQUENCE_ACTING_EVENT_DAMAGE))
+        if(target_entity->energy_state.health_current > 0 || !death_try_sequence_damage(target_entity, death_config, DEATH_TRY_SEQUENCE_ACTING_EVENT_DAMAGE))
         {
             if (fall_flag >= 1) return 1;
-            acting_entity->velocity.x = attack->dropv.x;
-            acting_entity->velocity.z = attack->dropv.z;
-            if(acting_entity->direction == DIRECTION_RIGHT)
+            target_entity->velocity.x = attack_object->dropv.x;
+            target_entity->velocity.z = attack_object->dropv.z;
+            if(target_entity->direction == DIRECTION_RIGHT)
             {
-                acting_entity->velocity.x = -acting_entity->velocity.x;
+                target_entity->velocity.x = -target_entity->velocity.x;
             }
-            if(acting_entity->inbackpain) acting_entity->velocity.x *= -1;
-            toss(acting_entity, attack->dropv.y);
-            acting_entity->damage_on_landing.attack_force = attack->damage_on_landing.attack_force;
-            acting_entity->damage_on_landing.attack_type = attack->damage_on_landing.attack_type;
-            acting_entity->knockdowncount = acting_entity->modeldata.knockdowncount; // reset the knockdowncount
-            acting_entity->knockdowntime = 0;
+            if(target_entity->inbackpain) target_entity->velocity.x *= -1;
+            toss(target_entity, attack_object->dropv.y);
+            target_entity->damage_on_landing.attack_force = attack_object->damage_on_landing.attack_force;
+            target_entity->damage_on_landing.attack_type = attack_object->damage_on_landing.attack_type;
+            target_entity->knockdowncount = target_entity->modeldata.knockdowncount; // reset the knockdowncount
+            target_entity->knockdowntime = 0;
 
             // If no fall/die animations exist, entity simply disappears.
-            if(!set_fall(acting_entity, other, attack, 1))
+            if(!set_fall(target_entity, attacking_entity, attack_object, 1))
             {
-                if(acting_entity->modeldata.type & TYPE_PLAYER)
+                if(target_entity->modeldata.type & TYPE_PLAYER)
                 {
-                    player_die();
+                    player_die_entity(target_entity);
                 }
                 else
                 {
-                    kill_entity(acting_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_COMMON_FALL);
+                    kill_entity(target_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_COMMON_FALL);
                 }
                 return 1;
             }
         }
 
-        if(acting_entity->modeldata.type & TYPE_PLAYER)
+        if(target_entity->modeldata.type & TYPE_PLAYER)
         {
-            if (savedata.joyrumble[acting_entity->playerindex]) control_rumble(acting_entity->playerindex, 1, attack->attack_force * 3);
+            if (savedata.joyrumble[target_entity->playerindex]) control_rumble(target_entity->playerindex, 1, attack_object->attack_force * 3);
         }
     }
-    else if(attack->grab && !attack->no_pain)
+    else if(attack_object->grab && !attack_object->no_pain)
     {
-        acting_entity->takeaction = common_pain;
-        other->takeaction = common_grabattack;
-        other->stalltime = _time + global_config.grab_stall;
-        acting_entity->releasetime = _time + (global_config.game_speed / 2);
-        set_pain(acting_entity, acting_entity->last_damage_type, 0);
+        target_entity->takeaction = common_pain;
+        attacking_entity->takeaction = common_grabattack;
+        attacking_entity->stalltime = _time + global_config.grab_stall;
+        target_entity->releasetime = _time + (global_config.game_speed / 2);
+        set_pain(target_entity, target_entity->last_damage_type, 0);
     }
     // Don't change to pain animation if frozen
-    else if(!acting_entity->frozen && !(acting_entity->modeldata.pain_config_flags & PAIN_CONFIG_PAIN_DISABLE) && !attack->no_pain && pain_check)
+    else if(!target_entity->frozen && !(target_entity->modeldata.pain_config_flags & PAIN_CONFIG_PAIN_DISABLE) && !attack_object->no_pain && pain_check)
     {
-        acting_entity->takeaction = common_pain;
-        set_pain(acting_entity, acting_entity->last_damage_type, 1);
+        target_entity->takeaction = common_pain;
+        set_pain(target_entity, target_entity->last_damage_type, 1);
     }
 
     return 1;
@@ -37790,7 +37608,7 @@ int common_try_jump()
     float rmax = 0.0;
     float initial_z_velocity = 0.0;
 
-    e_animations jump_animation = ANI_JUMP;
+    animation_id_t jump_animation = ANI_JUMP;
 
     /*
     * If we can't jump at all, return false now.
@@ -39357,7 +39175,7 @@ void common_pickupitem(entity *other)
     if(self->weapent == NULL && isSubtypeWeapon(other) && validanim(self, ANI_GET))
     {
         self->takeaction = common_get;
-        dropweapon(0);  //don't bother dropping the previous one though, scine it won't pickup another
+        dropweapon(self, 0);  //don't bother dropping the previous one though, scine it won't pickup another
         self->weapent = other;
         
         set_weapon(self, other->modeldata.weapon_properties.weapon_index, 0);
@@ -39386,7 +39204,7 @@ void common_pickupitem(entity *other)
     else if(self->weapent == NULL && isSubtypeProjectile(other) && validanim(self, ANI_GET))
     {
         self->takeaction = common_get;
-        dropweapon(0);
+        dropweapon(self, 0);
         self->weapent = other;
         set_getting(self);
         self->velocity.x = self->velocity.z = 0; //stop moving
@@ -40879,9 +40697,9 @@ void suicide()
 
 // Re-enter playfield
 // Used by player_fall and player_takedamage
-void player_die()
+void player_die_entity(entity* acting_entity)
 {
-    int playerindex = self->playerindex;
+    int playerindex = acting_entity->playerindex;
     int i = 0;
 
     if(!(global_config.cheats & CHEAT_OPTIONS_LIVES_ACTIVE))
@@ -40889,7 +40707,7 @@ void player_die()
         --player[playerindex].lives;
     }
 
-    if(firstplayer == self)
+    if(firstplayer == acting_entity)
     {
         firstplayer = NULL;
     }
@@ -40901,8 +40719,8 @@ void player_die()
         nomaxrushreset[playerindex] = player[playerindex].ent->rush.max;
     }
     player[playerindex].ent = NULL;
-    player[playerindex].spawnhealth = self->modeldata.health;
-    player[playerindex].spawnmp = self->modeldata.mp;
+    player[playerindex].spawnhealth = acting_entity->modeldata.health;
+    player[playerindex].spawnmp = acting_entity->modeldata.mp;
 
     /* 
     * Handle the body. If any corpse flags
@@ -40917,12 +40735,12 @@ void player_die()
 
     static const e_death_config_flags leave_corpse = DEATH_CONFIG_REMOVE_CORPSE_AIR | DEATH_CONFIG_REMOVE_CORPSE_GROUND;
 
-    if (self->modeldata.death_config_flags & leave_corpse) {
-        self->think = NULL;
-        self->takeaction = NULL;
-        self->death_state |= DEATH_STATE_CORPSE;        
+    if (acting_entity->modeldata.death_config_flags & leave_corpse) {
+        acting_entity->think = NULL;
+        acting_entity->takeaction = NULL;
+        acting_entity->death_state |= DEATH_STATE_CORPSE;
     } else {
-        kill_entity(self, KILL_ENTITY_TRIGGER_PLAYER_DEATH);
+        kill_entity(acting_entity, KILL_ENTITY_TRIGGER_PLAYER_DEATH);
     }
 
     if(player[playerindex].lives <= 0)
@@ -41003,7 +40821,7 @@ void player_die()
             }
         }
 
-        if(self->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_STAGE)
+        if(acting_entity->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_STAGE)
         {
             player[playerindex].weapnum = level->setweap;
         }
@@ -41031,6 +40849,11 @@ void player_die()
         timeleft = level->settime * global_config.counter_speed;    // Feb 24, 2005 - This line moved here to set custom time
     }
 
+}
+
+void player_die(void)
+{
+    player_die_entity(self);
 }
 
 
@@ -41118,12 +40941,12 @@ int check_energy(e_cost_check which, int ani)
 // Replaces unreadable check_range() macro. Runs individual
 // check range functions for each axis and returns true
 // if target is within range of ALL.
-int check_range_target_all(const entity *ent, const entity *target, const e_animations animation_id, const int range_min, const int range_max)
+bool check_range_target_all(const entity *ent, const entity *target, const animation_id_t animation_id, int64_t range_min, int64_t range_max)
 {
     // Must have a valid target entity.
     if(!target)
     {
-        return 0;
+        return false;
     }
 
     // Get pointer to animation.
@@ -41131,25 +40954,25 @@ int check_range_target_all(const entity *ent, const entity *target, const e_anim
 
     if (!check_range_target_x(ent, target, animation, range_min, range_max))
     {
-        return 0;
+        return false;
     }
 
     if (!check_range_target_y(ent, target, animation, range_min, range_max))
     {
-        return 0;
+        return false;
     }
 
     if (!check_range_target_z(ent, target, animation, range_min, range_max))
     {
-        return 0;
+        return false;
     }
 
     if (!check_range_target_base(ent, target, animation, range_min, range_max))
     {
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 // Caskey, Damon V.
@@ -41157,7 +40980,7 @@ int check_range_target_all(const entity *ent, const entity *target, const e_anim
 //
 // Return true if target is within Base range
 // of entity's animation.
-int check_range_target_base(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max)
+bool check_range_target_base(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max)
 {
     int ent_base;
     int target_base;
@@ -41167,7 +40990,7 @@ int check_range_target_base(const entity *acting_entity, const entity *target, c
     // Must have a target.
     if(!acting_entity || !target)
     {
-        return 0;
+        return false;
     }
 
     range.max = range_max;
@@ -41189,7 +41012,7 @@ int check_range_target_base(const entity *acting_entity, const entity *target, c
     // Return true if final target location is
     // within range min and max.
     return (target_base >= range.min
-            && target_base <= range.max);
+            && target_base <= range.max) ? true : false;
 }
 
 // Caskey, Damon V.
@@ -41197,12 +41020,12 @@ int check_range_target_base(const entity *acting_entity, const entity *target, c
 //
 // Return true if target is within X range
 // of entity's animation.
-int check_range_target_x(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max)
+bool check_range_target_x(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max)
 {
     // Must have entities.
     if(!acting_entity || !target)
     {
-        return 0;
+        return false;
     }
 
     // Get positions cast as integers.
@@ -41231,7 +41054,7 @@ int check_range_target_x(const entity *acting_entity, const entity *target, cons
         range.max = ent_x + range.max;
 
         return (target_x >= range.min
-                && target_x <= range.max);
+                && target_x <= range.max) ? true : false;
     }
     else
     {
@@ -41241,7 +41064,7 @@ int check_range_target_x(const entity *acting_entity, const entity *target, cons
         range.max = ent_x - range.max;
 
         return (target_x <= range.min
-                && target_x >= range.max);
+                && target_x >= range.max) ? true : false;
     }
 }
 
@@ -41250,12 +41073,12 @@ int check_range_target_x(const entity *acting_entity, const entity *target, cons
 //
 // Return true if target is within Y range
 // of entity's animation.
-int check_range_target_y(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max)
+bool check_range_target_y(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max)
 {
     // Must have a target.
     if(!acting_entity || !target)
     {
-        return 0;
+        return false;
     }
 
     s_metric_range range;
@@ -41276,7 +41099,7 @@ int check_range_target_y(const entity *acting_entity, const entity *target, cons
     // Return true if final target location is
     // within range min and max.
     return (target_y >= range.min
-            && target_y <= range.max);
+            && target_y <= range.max) ? true : false;
 }
 
 // Caskey, Damon V.
@@ -41284,12 +41107,12 @@ int check_range_target_y(const entity *acting_entity, const entity *target, cons
 //
 // Return true if target is within Z range
 // of entity's animation.
-int check_range_target_z(const entity * acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max)
+bool check_range_target_z(const entity * acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max)
 {
     // Must have a target.
     if(!acting_entity || !target)
     {
-        return 0;
+        return false;
     }
 
     s_metric_range range;
@@ -41310,7 +41133,7 @@ int check_range_target_z(const entity * acting_entity, const entity *target, con
     // Return true if final target location is
     // within range min and max.
     return (target_z >= range.min
-            && target_z <= range.max);
+            && target_z <= range.max) ? true : false;
 }
 
 int check_special()
@@ -41653,7 +41476,7 @@ void common_prejump()
 }
 
 
-void tryjump(float jumpv, float jumpx, float jumpz, e_animations animation_id)
+void tryjump(float jumpv, float jumpx, float jumpz, animation_id_t animation_id)
 {
     self->jump.velocity.y = jumpv;
     self->jump.velocity.x = jumpx;
@@ -41676,7 +41499,7 @@ void tryjump(float jumpv, float jumpx, float jumpz, e_animations animation_id)
 }
 
 
-void dojump(float jumpv, float jumpx, float jumpz, e_animations animation_id)
+void dojump(float jumpv, float jumpx, float jumpz, animation_id_t animation_id)
 {
     entity *dust;
 
@@ -41823,7 +41646,7 @@ void didfind_item(entity *other)
     }
     else if(other->modeldata.subtype == SUBTYPE_WEAPON)
     {
-        dropweapon(0);
+        dropweapon(self, 0);
         self->weapent = other;
         set_weapon(self, other->modeldata.weapon_properties.weapon_index, 0);
 
@@ -41847,7 +41670,7 @@ void didfind_item(entity *other)
     }
     else if(other->modeldata.subtype == SUBTYPE_PROJECTILE)
     {
-        dropweapon(0);
+        dropweapon(self, 0);
         self->weapent = other;
 
         if(global_sample_list.get >= 0)
@@ -41932,7 +41755,7 @@ void player_grab_check()
 
     if(!nolost && self->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_GRABBING)
     {
-        dropweapon(1);
+        dropweapon(self, 1);
     }
 
     // grabturn code
@@ -44630,13 +44453,13 @@ void subtract_shot()
         if(!self->weapent->modeldata.weapon_properties.use_count)
         {
             self->weapent->modeldata.weapon_properties.loss_count = 0;
-            dropweapon(0);
+            dropweapon(self, 0);
         }
     }
 }
 
 
-void dropweapon(int flag)
+void dropweapon(entity* acting_entity, int flag)
 {
     int wall = 0;
     entity *other = NULL;
@@ -44644,7 +44467,7 @@ void dropweapon(int flag)
     s_weapon* weapon_properties = NULL;
 
 	// If we already have a weapon, we'll need to discard it.
-    if(self->weapent)
+    if(acting_entity->weapent)
     {
         /*
         * Dump pointers to self's weapon entity and the 
@@ -44653,8 +44476,8 @@ void dropweapon(int flag)
         * reading downstream.
         */
 
-        weapon_entity = *&self->weapent;
-        weapon_properties = &self->weapent->modeldata.weapon_properties;
+        weapon_entity = acting_entity->weapent;
+        weapon_properties = &acting_entity->weapent->modeldata.weapon_properties;
 
 		// 2019-09-29 - Not sure about this logic. It appears that only type shot
 		// weapons or weapons with shot ammo are dropped.  Anything else is simply discarded.
@@ -44669,13 +44492,13 @@ void dropweapon(int flag)
             }
             
 			// We're going to use our own position for the weapon.
-            weapon_entity->direction = self->direction;
-            weapon_entity->position.z = self->position.z;
-            weapon_entity->position.x = self->position.x;
-            weapon_entity->position.y = self->position.y;
+            weapon_entity->direction = acting_entity->direction;
+            weapon_entity->position.z = acting_entity->position.z;
+            weapon_entity->position.x = acting_entity->position.x;
+            weapon_entity->position.y = acting_entity->position.y;
 
 			// Get any walls and platforms.
-            other = check_platform(weapon_entity->position.x, weapon_entity->position.z, self);
+            other = check_platform(weapon_entity->position.x, weapon_entity->position.z, acting_entity);
             wall = checkwall_index(weapon_entity->position.x, weapon_entity->position.z);
 
 			// Place onto wall or platform.
@@ -44708,7 +44531,7 @@ void dropweapon(int flag)
 			// Otherwise the weapon blinks out.
             if(!weapon_properties->loss_count)
             {
-                if(!(self->modeldata.weapon_properties.weapon_state & WEAPON_STATE_ANIMAL))
+                if(!(acting_entity->modeldata.weapon_properties.weapon_state & WEAPON_STATE_ANIMAL))
                 {
                     weapon_entity->blink = 1;
                     weapon_entity->takeaction = common_lie;
@@ -44723,7 +44546,7 @@ void dropweapon(int flag)
         }
 
 		// Clear our tracking variable that keeps the weapon entity pointer.
-        self->weapent = NULL;
+        acting_entity->weapent = NULL;
     }
 
 	// Flag 2 means we're probably setting the weapon directly (ex: setweapon command). 
@@ -44731,50 +44554,50 @@ void dropweapon(int flag)
 	// to the weapon model.
     if(flag < 2)
     {
-        if(self->modeldata.type & TYPE_PLAYER)
+        if(acting_entity->modeldata.type & TYPE_PLAYER)
         {
-            if(player[self->playerindex].weapnum)
+            if(player[acting_entity->playerindex].weapnum)
             {
-                set_weapon(self, player[self->playerindex].weapnum, 0);
+                set_weapon(acting_entity, player[acting_entity->playerindex].weapnum, 0);
             }
             else
             {
-                set_weapon(self, level->setweap, 0);
+                set_weapon(acting_entity, level->setweap, 0);
             }
         }
         else
         {
-            set_weapon(self, 0, 0);
+            set_weapon(acting_entity, 0, 0);
         }
     }
 
 	// Model override. If this is populated, we use its value
 	// to locate a model by index and revert to that instead 
 	// of the default model when a weapon is lost.
-    if(self->modeldata.weapon_properties.loss_index != MODEL_INDEX_NONE)
+    if(acting_entity->modeldata.weapon_properties.loss_index != MODEL_INDEX_NONE)
     {
-        set_weapon(self, self->modeldata.weapon_properties.loss_index, 0);
+        set_weapon(acting_entity, acting_entity->modeldata.weapon_properties.loss_index, 0);
     }
 }
 
 
-int player_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object)
+int player_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object)
 {
-    s_attack atk = *attack;
+    s_attack atk = *attack_object;
     //printf("damaged by: '%s' %d\n", other->name, attack->attack_force);
 
 	// Kratus (10-2021) Now the "infinite health cheat" will check the damage source, it will avoid some "special" damage sources
-	bool normal_damage;
 
 	// Damage comes from a normal source?
-	normal_damage = (!is_attack_type_special(atk.attack_type));
+	const bool normal_damage = (!is_attack_type_special(atk.attack_type)) ? true : false;
 
-    if((global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE && normal_damage) || (level->nohurt == DAMAGE_FROM_ENEMY_OFF && (other->modeldata.type & TYPE_ENEMY)))
+    if((global_config.cheats & CHEAT_OPTIONS_HEALTH_ACTIVE && normal_damage)
+        || (level->nohurt == DAMAGE_FROM_ENEMY_OFF && (attacking_entity->modeldata.type & TYPE_ENEMY)))
     {
         atk.attack_force = 0;
     }
     
-    return common_takedamage(other, &atk, fall_flag, defense_object);
+    return common_takedamage(target_entity, attacking_entity, &atk, fall_flag, defense_object);
 }
 
 ////////////////////////////////
@@ -44809,7 +44632,7 @@ void drop_all_enemies()
             
             if(ent_list[i]->modeldata.weapon_properties.loss_condition & WEAPON_LOSS_CONDITION_STAGE)
             {
-                dropweapon(1);
+                dropweapon(self, 1);
             }
 
             toss(ent_list[i], 2.5 + randf(1));
@@ -44858,7 +44681,7 @@ void kill_all_enemies()
             self = ent_list[i];
 
             attack.attack_force = self->energy_state.health_current;
-            self->takedamage(self, &attack, 0, self->defense);           
+            self->takedamage(self, self, &attack, 0, self->defense);
         }
     }
 
@@ -44867,20 +44690,19 @@ void kill_all_enemies()
 
 
 
-void smart_bomb(entity *e, s_attack *attack)    // New method for smartbombs
-{
+void smart_bomb(entity *e, s_attack *attack) {   // New method for smartbombs
+
     int i, hit = 0;
     entity *tmpself = NULL;
-    s_defense* defense_object = NULL;
 
     tmpself = self;
-    for(i = 0; i < ent_max; i++)
-    {
+    for(i = 0; i < ent_max; i++) {
+
         if( ent_list[i]->exists
                 && ent_list[i] != e
                 && ent_list[i]->energy_state.health_current > 0
-                && faction_check_is_hostile(e, ent_list[i]))
-        {
+                && faction_check_is_hostile(e, ent_list[i])) {
+                    
             self = ent_list[i];
             hit = 1; // for nocost, if the bomb doesn't hit, it won't cost energy
 
@@ -44896,19 +44718,17 @@ void smart_bomb(entity *e, s_attack *attack)    // New method for smartbombs
             lasthit.position.z = self->position.z;
             lasthit.target = self;
 
-            if(self->takedamage)
-            {
+            if(self->takedamage) {
 
-                defense_object = defense_find_current_object(self, NULL, attack->attack_type);
+                const s_defense* defense_object = defense_find_current_object(self, NULL, attack->attack_type);
                 
                 //attack.attack_drop = self->modeldata.knockdowncount+1;
-                self->takedamage(e, attack, 0, defense_object);
-            }
-            else
-            {
+                self->takedamage(self, e, attack, 0, defense_object);
+            
+            } else {
                 self->energy_state.health_current -= attack->attack_force;
-                if(self->energy_state.health_current <= 0)
-                {
+                
+                if(self->energy_state.health_current <= 0) {
                     kill_entity(self, KILL_ENTITY_TRIGGER_SMARTBOMB);
                 }
             }
@@ -44917,20 +44737,18 @@ void smart_bomb(entity *e, s_attack *attack)    // New method for smartbombs
             
         }
     }
-    if(nocost && hit && smartbomber) // don't use e, because this can be an item-bomb
-    {
+
+    if(nocost && hit && smartbomber) { // don't use e, because this can be an item-bomb
         self = smartbomber;
         
-        if(check_energy(ENERGY_TYPE_MP, ANI_SPECIAL))
-        {
+        if(check_energy(ENERGY_TYPE_MP, ANI_SPECIAL)) {
             self->energy_state.mp_current -= self->modeldata.animation[ANI_SPECIAL]->energy_cost.cost;
-        }
-        else
-        {
+        } else {
             self->energy_state.health_current -= self->modeldata.animation[ANI_SPECIAL]->energy_cost.cost;
         }
         
     }
+
     self = tmpself;
 
 }
@@ -45172,17 +44990,16 @@ e_faction_group faction_get_flags_from_arglist(const ArgList* arglist)
 * Return true if acting entity can 
 * hit target entity with attacks.
 */
-int faction_check_can_damage(entity* acting_entity, entity* target_entity, int indirect)
-{
+bool faction_check_can_damage(entity* acting_entity, entity* target_entity, const bool indirect) {
+
     e_entity_type acting_type;
     e_entity_type target_type;
     e_faction_group acting_faction;
     e_faction_group acting_faction_filtered;
     e_faction_group target_faction;
 
-    if (!acting_entity || !target_entity)
-    {
-        return 0;
+    if (!acting_entity || !target_entity) {
+        return false;
     }
 
     /*
@@ -45190,13 +45007,11 @@ int faction_check_can_damage(entity* acting_entity, entity* target_entity, int i
     * and type if the indirect flag is set.
     */
 
-    if (indirect)
-    {
+    if (indirect) {
         acting_faction = acting_entity->faction.damage_indirect;
         acting_type = acting_entity->faction.type_damage_indirect;
-    }
-    else
-    {
+    
+    } else {
         acting_faction = acting_entity->faction.damage_direct;
         acting_type = acting_entity->faction.type_damage_direct;
     }
@@ -45214,9 +45029,8 @@ int faction_check_can_damage(entity* acting_entity, entity* target_entity, int i
     * Check player interaction.
     */
 
-    if (faction_check_player_verses(acting_entity, target_entity, acting_faction))
-    {
-        return 0;
+    if (faction_check_player_verses(acting_entity, target_entity, acting_faction)) {
+        return false;
     }
 
     target_type = target_entity->modeldata.type;
@@ -45228,15 +45042,12 @@ int faction_check_can_damage(entity* acting_entity, entity* target_entity, int i
     * and ignore other factions.
     */
 
-    if (acting_faction & FACTION_GROUP_TYPE_EXCLUSIVE)
-    {
-        if (acting_type & target_type)
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
+    if (acting_faction & FACTION_GROUP_TYPE_EXCLUSIVE) {
+        
+        if (acting_type & target_type) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -45247,8 +45058,7 @@ int faction_check_can_damage(entity* acting_entity, entity* target_entity, int i
 
     target_faction = target_entity->faction.member;
 
-    if (acting_faction_filtered & target_faction)
-    {
+    if (acting_faction_filtered & target_faction) {
         /*
         * If one of the acting factions is
         * the tye inclusing group, then we
@@ -45256,22 +45066,20 @@ int faction_check_can_damage(entity* acting_entity, entity* target_entity, int i
         * target's type.
         */
 
-        if (acting_faction & FACTION_GROUP_TYPE_INCLUSIVE)
-        {
-            if (acting_type & target_type)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
+        if (acting_faction & FACTION_GROUP_TYPE_INCLUSIVE) {
+            
+            if (acting_type & target_type) {
+                return true;
+            
+            } else {
+                return false;
             }
         }
 
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 /*
@@ -46250,64 +46058,59 @@ void bike_crash()
 
 
 
-int biker_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object)
+int biker_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object)
 {
     entity *driver = NULL;
-    entity *tempself = NULL;
 
-    if(self->death_state & DEATH_STATE_DEAD)
+    if(target_entity->death_state & DEATH_STATE_DEAD)
     {
         return 0;
     }
     // Fell in a hole
-    if(self->position.y < PIT_DEPTH)
+    if(target_entity->position.y < PIT_DEPTH)
     {
-        kill_entity(self, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_BIKER_PIT);
+        kill_entity(target_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_BIKER_PIT);
         return 0;
     }
-    if(other != self)
+    if(attacking_entity != target_entity)
     {
-        set_opponent(other, self);
+        set_opponent(attacking_entity, target_entity);
     }
 
-    if(attack->no_pain) // don't drop driver until it is dead, because the attack has no pain effect
+    if(attack_object->no_pain) // don't drop driver until it is dead, because the attack has no pain effect
     {
-        checkdamage(self, other, attack, defense_object);
-        if(self->energy_state.health_current > 0)
+        checkdamage(target_entity, attacking_entity, attack_object, defense_object);
+        if(target_entity->energy_state.health_current > 0)
         {
             return 1;    // not dead yet
         }
     }
 
-    check_backpain(other,self);
-    set_pain(self,  self->last_damage_type, 1);
-    self->attacking = ATTACKING_ACTIVE;
-    if(!self->modeldata.offscreenkill)
+    check_backpain(attacking_entity, target_entity);
+    set_pain(target_entity, target_entity->last_damage_type, 1);
+    target_entity->attacking = ATTACKING_ACTIVE;
+    if(!target_entity->modeldata.offscreenkill)
     {
-        self->modeldata.offscreenkill = 100;
+        target_entity->modeldata.offscreenkill = 100;
     }
-    self->think = bike_crash;
+    target_entity->think = bike_crash;
     // well, this is the real entity, the driver who take the damage
-    if((driver = drop_driver(self)))
+    if((driver = drop_driver(target_entity)))
     {
-        driver->position.y = self->position.y;
-        tempself = self;
-        self = driver;
-        self->drop = 1;
-        self->direction = tempself->direction;
-        if(self->takedamage)
+        driver->position.y = target_entity->position.y;
+        driver->drop = 1;
+        driver->direction = target_entity->direction;
+        if(driver->takedamage)
         {
-            self->takedamage(other, attack, fall_flag, defense_object);
+            driver->takedamage(driver, attacking_entity, attack_object, fall_flag, defense_object);
         }
         else
         {
-            self->energy_state.health_current -= attack->attack_force;
+            driver->energy_state.health_current -= attack_object->attack_force;
         }
-        self = tempself;
-
     }
-    self->energy_state.health_current = 0;
-    checkdeath();
+    target_entity->energy_state.health_current = 0;
+    checkdeath(target_entity);
     return 1;
 }
 
@@ -46340,70 +46143,70 @@ void obstacle_fly()    // Now obstacles can fly when hit like on Simpsons/TMNT
 
 
 
-int obstacle_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object)
+int obstacle_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object)
 {
-    if(self->position.y <= PIT_DEPTH)
+    if(target_entity->position.y <= PIT_DEPTH)
     {
-        kill_entity(self, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_OBSTACLE_PIT);
+        kill_entity(target_entity, KILL_ENTITY_TRIGGER_TAKE_DAMAGE_OBSTACLE_PIT);
         return 0;
     }
 
-    set_opponent(other, self);
-    if(self->opponent && (self->opponent->modeldata.type & TYPE_PLAYER))
+    set_opponent(attacking_entity, target_entity);
+    if(target_entity->opponent && (target_entity->opponent->modeldata.type & TYPE_PLAYER))
     {
-        if (savedata.joyrumble[self->opponent->playerindex]) control_rumble(self->opponent->playerindex, 1, 75);
+        if (savedata.joyrumble[target_entity->opponent->playerindex]) control_rumble(target_entity->opponent->playerindex, 1, 75);
     }
     
     /* Calculate and apply HP damage. */
-    checkdamage(self, other, attack, defense_object);
+    checkdamage(target_entity, attacking_entity, attack_object, defense_object);
 
-    self->playerindex = other->playerindex;    // Added so points go to the correct player
-    addscore(other->playerindex, attack->attack_force * self->modeldata.multiple);  // Points can now be given for hitting an obstacle
+    target_entity->playerindex = attacking_entity->playerindex;    // Added so points go to the correct player
+    addscore(attacking_entity->playerindex, attack_object->attack_force * target_entity->modeldata.multiple);  // Points can now be given for hitting an obstacle
 
-    if(self->energy_state.health_current <= 0)
+    if(target_entity->energy_state.health_current <= 0)
     {
 
-        checkdeath();
+        checkdeath(target_entity);
 
-        if(other->position.x < self->position.x)
+        if(attacking_entity->position.x < target_entity->position.x)
         {
-            self->velocity.x = 1;
+            target_entity->velocity.x = 1;
         }
         else
         {
-            self->velocity.x = -1;
+            target_entity->velocity.x = -1;
         }
 
-        self->attacking = ATTACKING_ACTIVE;    // So obstacles can explode and hurt players/enemies
+        target_entity->attacking = ATTACKING_ACTIVE;    // So obstacles can explode and hurt players/enemies
 
-        if(self->modeldata.subtype == SUBTYPE_FLYDIE)     // Now obstacles can fly like on Simpsons/TMNT
+        if(target_entity->modeldata.subtype == SUBTYPE_FLYDIE)     // Now obstacles can fly like on Simpsons/TMNT
         {
-            self->velocity.x *= 4;
-            self->think = obstacle_fly;
-            ent_set_anim(self, ANI_FALL, 0);
+            target_entity->velocity.x *= 4;
+            target_entity->think = obstacle_fly;
+            ent_set_anim(target_entity, ANI_FALL, 0);
         }
         else
         {
-            self->think = obstacle_fall;
+            target_entity->think = obstacle_fall;
 
-            if(validanim(self, ANI_DIE))
+            if(validanim(target_entity, ANI_DIE))
             {
-                ent_set_anim(self, ANI_DIE, 0);    //  LTB 1-13-05  Die before toss
+                ent_set_anim(target_entity, ANI_DIE, 0);    //  LTB 1-13-05  Die before toss
             }
             else
             {
-                toss(self, self->modeldata.jumpheight / 1.333);
-                ent_set_anim(self, ANI_FALL, 0);
+                toss(target_entity, target_entity->modeldata.jumpheight / 1.333);
+                ent_set_anim(target_entity, ANI_FALL, 0);
             }
 
-            if(self->modeldata.death_config_flags & DEATH_CONFIG_MACRO_BLINK)
+            if(target_entity->modeldata.death_config_flags & DEATH_CONFIG_MACRO_BLINK)
             {
-                self->blink = 1;
+                target_entity->blink = 1;
             }
         }
     }
 
-    self->nextthink = _time + 1;
+    target_entity->nextthink = _time + 1;
     return 1;
 }
 
@@ -46844,7 +46647,7 @@ void kill_all_players_by_timeover()
     int i;
     s_attack attack_timeover = emptyattack;
     s_attack attack_lose = emptyattack;
-    s_defense* defense_object = NULL;
+    const s_defense* defense_object = NULL;
 
     attack_timeover.attack_type = ATK_TIMEOVER;
     attack_timeover.dropv.y = default_model_dropv.y;
@@ -46866,7 +46669,7 @@ void kill_all_players_by_timeover()
 
             defense_object = defense_find_current_object(self, NULL, attack_timeover.attack_type);
             
-            self->takedamage(self, &attack_timeover, 0, defense_object);
+            self->takedamage(self, self, &attack_timeover, 0, defense_object);
         }
         else if(self)
         {
@@ -46887,7 +46690,7 @@ void kill_all_players_by_timeover()
 
             defense_object = defense_find_current_object(self, NULL, attack_lose.attack_type);
            
-            self->takedamage(self, &attack_lose, 0, defense_object);
+            self->takedamage(self, self, &attack_lose, 0, defense_object);
         }
         self = tmp;
     }

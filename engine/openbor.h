@@ -981,6 +981,8 @@ typedef enum e_animations //Animations
     ANI_LOSE,				// 6330: This animation is performed when you got a time over.
     MAX_ANIS                		// Maximum # of animations. This must always be last.
 } e_animations;
+    
+typedef uint64_t animation_id_t;
 
 typedef enum
 {
@@ -1121,8 +1123,8 @@ typedef enum
 */ 
 typedef enum
 {
-    ATK_NONE            = -1,   // When we want no attack at all, such as damage_on_landing's default.
-    ATK_NORMAL,
+    ATK_NONE            = MAX_INT,   // When we want no attack at all, such as damage_on_landing's default.
+    ATK_NORMAL          = 0,
     ATK_NORMAL2,
     ATK_NORMAL3,
     ATK_NORMAL4,
@@ -1157,6 +1159,8 @@ typedef enum
     MAX_ATKS,
     STA_ATKS       = (MAX_ATKS-1)
 } e_attack_types;
+
+typedef uint64_t attack_type_t;
 
 // Attack box properties.
 // Caskey, Damon V.
@@ -2252,7 +2256,7 @@ typedef struct s_attack {
     e_otg               otg;                // Over The Ground. Gives ground projectiles the ability to hit lying ents.
 
     int                 attack_drop;        // now be a knock-down factor, how many this attack will knock victim down
-    e_attack_types      attack_type;        // Reaction animation, death, etc.
+    attack_type_t       attack_type;        // Reaction animation, death, etc.
     int                 counterattack;      // Treat other attack boxes as body box.
         
     int                 jugglecost;         // cost for juggling a falling ent
@@ -2497,7 +2501,7 @@ typedef struct
     e_bind_config           config;			    // Animation matching, axis matching, overrides, etc. ~~
     int                     sortid;             // Relative binding sortid. Default = -1
     int                     frame;              // Frame to match (only if requested in matching).
-    e_animations            animation;          // Animation to match (only if requested in matching).
+    animation_id_t          animation;          // Animation to match (only if requested in matching).
     s_axis_principal_int    offset;             // x,y,z offset.
     e_direction_adjust      direction_adjust;   // Direction force.
     struct entity* target;             // Entity subject will bind itself to.
@@ -2617,6 +2621,21 @@ typedef enum e_child_spawn_config
 } e_child_spawn_config;
 
 /*
+* Entity damage callback.
+*
+* Both participants are explicit so damage processing does not depend
+* on the global self pointer identifying the target entity.
+*/
+struct entity;
+
+typedef int (*entity_takedamage_function)(
+    struct entity* target_entity,
+    struct entity* attacking_entity,
+    s_attack* attack_object,
+    int fall_flag,
+    const s_defense* defense_object);
+
+/*
 * Caskey, Damon V.
 * 2022-05-26
 *
@@ -2641,7 +2660,7 @@ typedef struct s_child_spawn
     struct s_child_spawn*   next;
     s_axis_principal_int    position;
     e_entity_type           projectilehit;
-    int						(*takedamage)(struct entity* attacking_entity, s_attack* attack_object, int fall_flag, s_defense* defense_object);
+    entity_takedamage_function takedamage;
     s_axis_principal_float  velocity;
 } s_child_spawn;
 
@@ -3378,7 +3397,7 @@ typedef struct s_child_follow
     s_axis_principal_int follow_offset;
     s_range follow_range;
     s_range follow_run_range;
-    e_animations recall_animation;
+    animation_id_t recall_animation;
     s_range recall_range;
     s_axis_principal_int recall_offset;
 } s_child_follow;
@@ -3606,7 +3625,7 @@ extern s_modelcache *model_cache;
 // Jumping action setup.
 typedef struct
 {
-    e_animations    animation_id;   // Jumping Animation.
+    animation_id_t    animation_id;   // Jumping Animation.
     s_axis_principal_float        velocity;       // x,a,z velocity setting.
 } s_jump;
 
@@ -3803,10 +3822,10 @@ typedef struct entity
 	// Signed char.
 	char					name[MAX_NAME_LEN];					// Display name (alias). ~~	
        
-    // Function pointers.
+	// Function pointers.
 	void					(*takeaction)();					// Take an action (lie, attack, etc.). ~~
 	void					(*think)();							// Entity thinks. ~~    
-	int						(*takedamage)(struct entity* attacking_entity, s_attack* attack_object, int fall_flag, s_defense* defense_object);	// Entity applies damage to itself when hit, thrown, and so on. ~~
+    entity_takedamage_function takedamage;                  // Entity applies damage to itself when hit, thrown, and so on. ~~
     int						(*trymove)(float, float);			// Attempts to move. Container for most movement logic. ~~
 
     // Meta data.
@@ -4136,14 +4155,14 @@ int is_frozen(entity *e);
 void unfrozen(entity *e);
 
 /* Defense. */
-int calculate_force_damage(entity* target, entity* attacker, s_attack* attack_object, s_defense* defense_object, const bool blocked);
+int calculate_force_damage(entity* target, entity* attacker, s_attack* attack_object, const s_defense* defense_object, const bool blocked);
 s_defense* defense_allocate_object(void);
 void defense_apply_setup_to_property(char* filename, char* command, s_defense* defense, ArgList* arglist, e_defense_parameters target_parameter);
-void defense_dump_object(s_defense* target);
+void defense_dump_object(const s_defense* target);
 void defense_free_object(s_defense* target);
-s_defense* defense_find_current_object(entity* ent, s_body* body_object, e_attack_types attack_type);
-int defense_result_damage(s_defense* defense_object, int attack_force, int blocked);
-int defense_result_pain(s_attack* attack_object, s_defense* defense_object);
+const s_defense* defense_find_current_object(const entity* ent, const s_body* body_object, const attack_type_t attack_type);
+int64_t defense_result_damage(const s_defense* defense_object, int64_t attack_force, bool blocked);
+int defense_result_pain(s_attack* attack_object, const s_defense* defense_object);
 void defense_setup_from_arg(char* filename, char* command, s_defense* defense, ArgList* arglist, e_defense_parameters target_parameter);
 
 s_offense* offense_allocate_object(void);
@@ -4163,19 +4182,19 @@ e_damage_recursive_logic    recursive_effect_get_mode_setup_from_legacy_argument
 /* Blocking logic. */
 e_block_config_flags block_get_config_flags_from_arguments(const ArgList* arglist);
 e_block_config_flags block_get_config_flag_from_string(const char* value);
-int     check_blocking_decision(entity *ent);
-int     check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body* body);
-int     check_blocking_master(entity *ent, entity *other, s_attack *attack, s_body* body);
-int     check_blocking_rules(entity *ent);
-int     check_blocking_pain(entity *ent, s_attack *attack);
+bool    check_blocking_decision(entity *ent);
+bool    check_blocking_eligible(entity *ent, entity *other, s_attack *attack, s_body* body);
+bool    check_blocking_master(entity *ent, entity *other, s_attack *attack, s_body* body);
+bool    check_blocking_rules(entity *ent);
+bool    check_blocking_pain(const entity *ent, const s_attack *attack);
 void	do_active_block(entity *ent);
 void	do_passive_block(entity *ent, entity *other, s_attack *attack);
 void    set_blocking_action(entity *ent, entity *other, s_attack *attack);
 void    set_blocking_animation(entity *ent, s_attack *attack);
 
 /* Counter action (aka. couner attack). */
-int check_counter_condition(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object);
-int try_counter_action(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object);
+bool check_counter_condition(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object);
+bool try_counter_action(entity* target, entity* attacker, s_attack* attack_object, s_body* body_object);
 
 // Select player models.
 int		find_selectable_model_count				();
@@ -4322,7 +4341,7 @@ void apply_color_set_adjust(entity* ent, entity* parent, e_color_adjust adjustme
 /* Faction control .*/
 void faction_copy_all(entity* ent, entity* source);
 void faction_copy_data(s_faction* dest, s_faction* source);
-int faction_check_can_damage(entity* acting_entity, entity* target_entity, int indirect);
+bool faction_check_can_damage(entity* acting_entity, entity* target_entity, const bool indirect);
 int faction_check_is_hostile(entity* acting_entity, entity* target_entity);
 int faction_check_player_verses(entity* acting_entity, entity* target_entity, e_faction_group faction_property);
 e_faction_group faction_get_flags_from_arglist(const ArgList* arglist);
@@ -4505,7 +4524,7 @@ void set_model_ex(entity *ent, char *modelname, int index, s_model *newmodel, in
 
 e_weapon_loss_condition weapon_loss_condition_interpret_from_legacy_weaploss(e_weapon_loss_condition weapon_loss_condition_value, e_weapon_loss_condition_legacy legacy_value);
 e_weapon_loss_condition_legacy weapon_loss_condition_interpret_to_legacy(e_weapon_loss_condition weapon_loss_condition_value);
-void dropweapon(int flag);
+void dropweapon(entity* acting_entity, int flag);
 
 void biker_drive(void);
 void trap_think(void);
@@ -4513,17 +4532,17 @@ void steamer_think(void);
 void text_think(void);
 void anything_walk(void);
 void adjust_walk_animation(entity *other);
-int player_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object);
-int biker_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object);
-int obstacle_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object);
+int player_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object);
+int biker_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object);
+int obstacle_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object);
 void suicide(void);
 void player_blink(void);
 void common_prejump();
 void common_preduck();
 void common_idle();
 void recursive_entity_effect_update(entity *target);
-void tryjump(float, float, float, e_animations);
-void dojump(float, float, float, e_animations);
+void tryjump(float, float, float, animation_id_t);
+void dojump(float, float, float, animation_id_t);
 void tryduck(entity*);
 void tryduckrise(entity*);
 void tryvictorypose(entity*);
@@ -4550,13 +4569,13 @@ void sort_invert_by_parent(entity *ent, entity* parent);
 
 int check_canbegrabbed(entity* acting_entity, entity* target_entity);
 int check_cangrab(entity* acting_entity, entity* target_entity);
-int checkgrab(entity *other, s_attack *attack);
-void checkdamageeffects(s_attack *attack);
-void checkdamagedrop(entity* target_entity, s_attack* attack_object, s_defense* defense_object);
-void checkdamageflip(entity* target_entity, entity* other, s_attack* attack_object, s_defense* defense_object);
-void checkmpadd();
-void checkhitscore(entity *other, s_attack *attack);
-void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, s_defense* defense_object);
+int checkgrab(entity* target_entity, entity* attacking_entity, s_attack* attack_object);
+void checkdamageeffects(entity* target_entity, s_attack* attack_object);
+void checkdamagedrop(entity* target_entity, s_attack* attack_object, const s_defense* defense_object);
+void checkdamageflip(entity* target_entity, entity* other, s_attack* attack_object, const s_defense* defense_object);
+void checkmpadd(entity* target_entity);
+void checkhitscore(entity* target_entity, entity* attacking_entity, s_attack* attack_object);
+void checkdamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, const s_defense* defense_object);
 void checkdamageonlanding(entity* acting_entity);
 int checkhit(entity *attacker, entity *target);
 int checkhole(float x, float z);
@@ -4577,12 +4596,12 @@ float checkbase(float x, float z, float y, entity *ent);
 entity *check_block_obstacle(entity *entity);
 int check_block_wall(entity *entity);
 int colorset_timed_expire(entity *ent);
-int check_lost();
-int check_range_target_all(const entity *ent, const entity *target, const e_animations animation_id, const int range_min, const int range_max);
-int check_range_target_base(const entity * acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max);
-int check_range_target_x(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max);
-int check_range_target_y(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max);
-int check_range_target_z(const entity *acting_entity, const entity *target, const s_anim *animation, const int range_min, const int range_max);
+bool check_lost();
+bool check_range_target_all(const entity *ent, const entity *target, animation_id_t animation_id, int64_t range_min, int64_t range_max);
+bool check_range_target_base(const entity * acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max);
+bool check_range_target_x(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max);
+bool check_range_target_y(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max);
+bool check_range_target_z(const entity *acting_entity, const entity *target, const s_anim *animation, int64_t range_min, int64_t range_max);
 
 void generate_basemap(int map_index, float rx, float rz, float x_size, float z_size, float min_a, float max_a, int x_cont);
 int testmove(entity *, float, float, float, float);
@@ -4631,7 +4650,7 @@ int melee_attack();
 void dothrow();
 void doprethrow();
 void dograbattack(int which);
-e_animations do_grab_attack_finish(entity *ent, int which);
+animation_id_t do_grab_attack_finish(entity *ent, int which);
 int check_special();
 void normal_prepare();
 void common_jump();
@@ -4650,8 +4669,8 @@ void common_grab(void);
 void common_grabattack();
 void common_grabbed();
 void common_block(void);
-int arrow_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object);
-int common_takedamage(entity *other, s_attack *attack, int fall_flag, s_defense* defense_object);
+int arrow_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object);
+int common_takedamage(entity* target_entity, entity* attacking_entity, s_attack* attack_object, int fall_flag, const s_defense* defense_object);
 int normal_attack();
 void common_throw(void);
 void common_throw_wait(void);
@@ -4684,7 +4703,8 @@ int common_move(void);
 void common_think(void);
 void suicide(void);
 void prethrow(void);
-void player_die();
+void player_die(void);
+void player_die_entity(entity* acting_entity);
 int player_trymove(float xdir, float zdir);
 int check_energy(e_cost_check which, int ani);
 bool player_preinput();
@@ -4696,7 +4716,7 @@ int check_costmove(int s, int fs, int jumphack);
 void didfind_item(entity *other);
 void player_think(void);
 void subtract_shot();
-void dropweapon(int flag);
+void dropweapon(entity* acting_entity, int flag);
 void drop_all_enemies();
 void kill_all_enemies();
 void smart_bomb(entity *e, s_attack *attack);

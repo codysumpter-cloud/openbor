@@ -10902,12 +10902,11 @@ HRESULT openbor_damageentity(ScriptVariant **varlist , ScriptVariant **pretvar, 
 {    
     entity* ent = NULL;
     entity* other = NULL;
-    entity* temp = NULL;
     LONG force = 0;
     LONG drop = 0;
     LONG type = 0;
     s_attack atk = emptyattack;
-    s_defense* defense_object = NULL;
+    const s_defense* defense_object = NULL;
 
     if(paramCount < 1)
     {
@@ -10983,13 +10982,9 @@ HRESULT openbor_damageentity(ScriptVariant **varlist , ScriptVariant **pretvar, 
     }
     else
     {
-        temp = self;
-        self = ent;
+        defense_object = defense_find_current_object(ent, NULL, atk.attack_type);
 
-        defense_object = defense_find_current_object(self, NULL, atk.attack_type);        
-
-        (*pretvar)->lVal = (LONG)self->takedamage(other, &atk, 0, defense_object);
-        self = temp;
+        (*pretvar)->lVal = (LONG)ent->takedamage(ent, other, &atk, 0, defense_object);
     }
     return S_OK;
 
@@ -11008,7 +11003,7 @@ HRESULT openbor_getcomputeddamage(ScriptVariant **varlist , ScriptVariant **pret
     LONG type;
     LONG block;
     s_attack atk = emptyattack;
-    s_defense* defense_object = NULL;
+    const s_defense* defense_object = NULL;
 
     if(paramCount < 3) {
         printf("Function requires at least 3 parameters.\n");
@@ -16527,4 +16522,3 @@ gsi_error:
     *pretvar = NULL;
     return E_FAIL;
 }
-
