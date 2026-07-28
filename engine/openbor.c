@@ -11929,7 +11929,7 @@ e_entity_type get_type_from_arglist(ArgList* arglist)
     int i = 0;
     char* value = "";
 
-    e_entity_type result = TYPE_UNDELCARED;
+    e_entity_type result = TYPE_UNDECLARED;
 
     for (i = 1; (value = GET_ARGP(i)) && value[0]; i++)
     {
@@ -13524,9 +13524,10 @@ s_model *init_model(const int cacheindex, const int unload)
         .damage_indirect = FACTION_GROUP_DEFAULT,
         .hostile = FACTION_GROUP_DEFAULT,
         .member = FACTION_GROUP_DEFAULT,
-        .type_damage_direct = TYPE_UNDELCARED,
-        .type_damage_indirect = TYPE_UNDELCARED,
-        .type_hostile = TYPE_UNDELCARED
+        .type_damage_direct = TYPE_UNDECLARED,
+        .type_damage_indirect = TYPE_UNDECLARED,
+        .type_hostile = TYPE_UNDECLARED,
+        .object_type = OBJECT_TYPE_FACTION
     };
 
     newchar->move_config_flags            = MOVE_CONFIG_NONE;
@@ -18298,7 +18299,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
         }
     }
 
-    if(newchar->faction.type_hostile == TYPE_UNDELCARED) // not been initialized, so initialize it
+    if(newchar->faction.type_hostile == TYPE_UNDECLARED) // not been initialized, so initialize it
     {
         switch (newchar->type)
         {
@@ -18314,13 +18315,13 @@ s_model *load_cached_model(char *name, char *owner, char unload)
         case TYPE_TRAP:
             newchar->faction.type_hostile = TYPE_ENEMY | TYPE_PLAYER;
         case TYPE_OBSTACLE:
-            newchar->faction.type_hostile = TYPE_UNDELCARED;
+            newchar->faction.type_hostile = TYPE_UNDECLARED;
             break;
 		case TYPE_PROJECTILE:
 			// We want a clean slate so the projectile 
 			// spawn functions will copy owner settings 
 			// by default.
-			newchar->faction.type_hostile = TYPE_UNDELCARED;
+			newchar->faction.type_hostile = TYPE_UNDECLARED;
 			break;
         case TYPE_SHOT:  // only target enemies
             newchar->faction.type_hostile = TYPE_ENEMY ;
@@ -18331,7 +18332,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
         }
     }
 
-    if(newchar->faction.type_damage_direct == TYPE_UNDELCARED) // not been initialized, so initialize it
+    if(newchar->faction.type_damage_direct == TYPE_UNDECLARED) // not been initialized, so initialize it
     {
         switch (newchar->type)
         {
@@ -18357,7 +18358,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
 			// We want a clean slate so the projectile 
 			// spawn functions will copy owner settings 
 			// by default.
-			newchar->faction.type_damage_direct = TYPE_UNDELCARED;
+			newchar->faction.type_damage_direct = TYPE_UNDECLARED;
 			break;
         case TYPE_SHOT:
             newchar->faction.type_damage_direct = TYPE_ENEMY | TYPE_PLAYER | TYPE_OBSTACLE;
@@ -18371,7 +18372,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
         }
     }
 
-    if(newchar->faction.type_damage_indirect == TYPE_UNDELCARED) // not been initialized, so initialize it
+    if(newchar->faction.type_damage_indirect == TYPE_UNDECLARED) // not been initialized, so initialize it
     {
         switch (newchar->type)
         {
@@ -18393,7 +18394,7 @@ s_model *load_cached_model(char *name, char *owner, char unload)
 			// We want a clean slate so the projectile 
 			// spawn functions will copy owner settings 
 			// by default.
-			newchar->faction.type_damage_indirect = TYPE_UNDELCARED;
+			newchar->faction.type_damage_indirect = TYPE_UNDECLARED;
 			break;
         case TYPE_SHOT: // hmm, don't really needed
             newchar->faction.type_damage_indirect = TYPE_ENEMY | TYPE_PLAYER | TYPE_OBSTACLE;
@@ -24539,7 +24540,7 @@ void ent_default_init(entity *e)
     case TYPE_ANY:
     case TYPE_NO_COPY:
     case TYPE_RESERVED:
-	case TYPE_UNDELCARED:
+	case TYPE_UNDECLARED:
 	case TYPE_UNKNOWN:
 		//Do nothing.
         break;
@@ -44841,9 +44842,15 @@ void faction_copy_all(entity* dest, entity* source)
 * Copy faction properties if 
 * conditions pass.
 */
-void faction_copy_data(s_faction* dest, s_faction* source)
-{
-    
+void faction_copy_data(s_faction* dest, s_faction* source) {
+
+    /*
+    * The destination is always a faction
+    * object, regardless of which faction
+    * properties qualify for copying.
+    */
+    dest->object_type = OBJECT_TYPE_FACTION;
+
     /*
     * Faction groups. Only copy if source or 
     * destination has a value and does not
@@ -44856,23 +44863,27 @@ void faction_copy_data(s_faction* dest, s_faction* source)
     * keep it here and maintainable. 
     */
 
-    if (source->damage_direct != FACTION_GROUP_NONE && !(source->damage_direct & FACTION_GROUP_NO_COPY) && !(dest->damage_direct & FACTION_GROUP_NO_COPY))
-    { 
+    if (source->damage_direct != FACTION_GROUP_NONE 
+        && !(source->damage_direct & FACTION_GROUP_NO_COPY) 
+        && !(dest->damage_direct & FACTION_GROUP_NO_COPY)) {
         dest->damage_direct = source->damage_direct; 
     }
 
-    if (source->damage_indirect != FACTION_GROUP_NONE && !(source->damage_indirect & FACTION_GROUP_NO_COPY) && !(dest->damage_indirect & FACTION_GROUP_NO_COPY))
-    { 
+    if (source->damage_indirect != FACTION_GROUP_NONE 
+        && !(source->damage_indirect & FACTION_GROUP_NO_COPY) 
+        && !(dest->damage_indirect & FACTION_GROUP_NO_COPY)) {
         dest->damage_indirect = source->damage_indirect; 
     }
     
-    if (source->hostile != FACTION_GROUP_NONE && !(source->hostile & FACTION_GROUP_NO_COPY) && !(dest->hostile & FACTION_GROUP_NO_COPY))
-    { 
+    if (source->hostile != FACTION_GROUP_NONE 
+        && !(source->hostile & FACTION_GROUP_NO_COPY) 
+        && !(dest->hostile & FACTION_GROUP_NO_COPY)) {
         dest->hostile = source->hostile; 
     }
     
-    if (source->member != FACTION_GROUP_NONE && !(source->member & FACTION_GROUP_NO_COPY) && !(dest->member & FACTION_GROUP_NO_COPY))
-    { 
+    if (source->member != FACTION_GROUP_NONE 
+        && !(source->member & FACTION_GROUP_NO_COPY) 
+        && !(dest->member & FACTION_GROUP_NO_COPY)) {
         dest->member = source->member; 
     }
 
@@ -44880,20 +44891,24 @@ void faction_copy_data(s_faction* dest, s_faction* source)
     * Types. Same rule as faction groups.
     */
 
-    if (source->type_damage_direct != TYPE_UNDELCARED && !(source->type_damage_direct & TYPE_NO_COPY) && !(dest->type_damage_direct & TYPE_NO_COPY))
-    { 
+    if (source->type_damage_direct != TYPE_UNDECLARED 
+        && !(source->type_damage_direct & TYPE_NO_COPY) 
+        && !(dest->type_damage_direct & TYPE_NO_COPY)) {
+    
         dest->type_damage_direct = source->type_damage_direct; 
     }
 
-    if (source->type_damage_indirect != TYPE_UNDELCARED && !(source->type_damage_indirect & TYPE_NO_COPY) && !(dest->type_damage_indirect & TYPE_NO_COPY))
-    { 
+    if (source->type_damage_indirect != TYPE_UNDECLARED 
+        && !(source->type_damage_indirect & TYPE_NO_COPY) 
+        && !(dest->type_damage_indirect & TYPE_NO_COPY)) {
         dest->type_damage_indirect = source->type_damage_indirect; 
     }
 
-    if (source->type_hostile != TYPE_UNDELCARED && !(source->type_hostile & TYPE_NO_COPY) && !(dest->type_hostile & TYPE_NO_COPY))
-    { 
+    if (source->type_hostile != TYPE_UNDECLARED 
+        && !(source->type_hostile & TYPE_NO_COPY) 
+        && !(dest->type_hostile & TYPE_NO_COPY)) {
         dest->type_hostile = source->type_hostile; 
-    }
+    }    
 }
 
 /*
@@ -44901,19 +44916,19 @@ void faction_copy_data(s_faction* dest, s_faction* source)
 * 2022-05-24
 *
 * Read a text argument for model copy flag
-* and output appropriate constant. If input
-* is legacy integer, we just pass it on.
+* and output appropriate constant.
 */
-e_faction_group faction_get_flag_from_string(const char* value)
-{   
-    const struct 
-    {
+faction_group_mask_t faction_get_flag_from_string(const char* value) {
+
+    const struct {
         const char* text_name;
-        e_faction_group flag;
+        faction_group_mask_t flag;
 
     } flag_lookup_table[] = {
         { "none", FACTION_GROUP_NONE },
         { "all", FACTION_GROUP_ALL_NORMAL },
+        {"all0", FACTION_GROUP_ALL_NORMAL_0 },
+        {"all1", FACTION_GROUP_ALL_NORMAL_1 },
         { "neutral", FACTION_GROUP_NEUTRAL },
         { "no_copy", FACTION_GROUP_NO_COPY },
         { "player_verses", FACTION_GROUP_PLAYER_VERSES },
@@ -44944,26 +44959,50 @@ e_faction_group faction_get_flag_from_string(const char* value)
         { "w", FACTION_GROUP_W },
         { "x", FACTION_GROUP_X },
         { "y", FACTION_GROUP_Y },
-        { "z", FACTION_GROUP_Z }
+        { "z", FACTION_GROUP_Z },
+        { "a1", FACTION_GROUP_A1 },
+        { "b1", FACTION_GROUP_B1 },
+        { "c1", FACTION_GROUP_C1 },
+        { "d1", FACTION_GROUP_D1 },
+        { "e1", FACTION_GROUP_E1 },
+        { "f1", FACTION_GROUP_F1 },
+        { "g1", FACTION_GROUP_G1 },
+        { "h1", FACTION_GROUP_H1 },
+        { "i1", FACTION_GROUP_I1 },
+        { "j1", FACTION_GROUP_J1 },
+        { "k1", FACTION_GROUP_K1 },
+        { "l1", FACTION_GROUP_L1 },
+        { "m1", FACTION_GROUP_M1 },
+        { "n1", FACTION_GROUP_N1 },
+        { "o1", FACTION_GROUP_O1 },
+        { "p1", FACTION_GROUP_P1 },
+        { "q1", FACTION_GROUP_Q1 },
+        { "r1", FACTION_GROUP_R1 },
+        { "s1", FACTION_GROUP_S1 },
+        { "t1", FACTION_GROUP_T1 },
+        { "u1", FACTION_GROUP_U1 },
+        { "v1", FACTION_GROUP_V1 },
+        { "w1", FACTION_GROUP_W1 },
+        { "x1", FACTION_GROUP_X1 },
+        { "y1", FACTION_GROUP_Y1 },
+        { "z1", FACTION_GROUP_Z1 }
     };
 
     const size_t list_count = sizeof(flag_lookup_table) / sizeof(*flag_lookup_table);
 
-    for (size_t i = 0; i < list_count; i++)
-    {
-        if (stricmp(value, flag_lookup_table[i].text_name) == 0)
-        {
+    for (size_t i = 0; i < list_count; i++) {
+        if (stricmp(value, flag_lookup_table[i].text_name) == 0) {
             return flag_lookup_table[i].flag;
         }
     }
-    
+
     /*
     * Couldn't find a match in the lookup
     * table. Send alert to log and return
     * none flag.
     */
 
-    printf("\n\n Unknown faction (%s). \n", value);    
+    printf("\n\n Unknown faction (%s). \n", value);
     return FACTION_GROUP_NONE;
 }
 
@@ -44974,12 +45013,12 @@ e_faction_group faction_get_flag_from_string(const char* value)
 * Populate faction property from
 * text arguments.
 */
-e_faction_group faction_get_flags_from_arglist(const ArgList* arglist)
+faction_group_mask_t faction_get_flags_from_arglist(const ArgList* arglist)
 {
     int i = 0;
     char* value = "";
 
-    e_faction_group result = FACTION_GROUP_NONE;
+    faction_group_mask_t result = FACTION_GROUP_NONE;
 
     for (i = 1; (value = GET_ARGP(i)) && value[0]; i++)
     {
@@ -45000,9 +45039,9 @@ bool faction_check_can_damage(entity* acting_entity, entity* target_entity, cons
 
     e_entity_type acting_type;
     e_entity_type target_type;
-    e_faction_group acting_faction;
-    e_faction_group acting_faction_filtered;
-    e_faction_group target_faction;
+    faction_group_mask_t acting_faction;
+    faction_group_mask_t acting_faction_filtered;
+    faction_group_mask_t target_faction;
 
     if (!acting_entity || !target_entity) {
         return false;
@@ -45101,9 +45140,9 @@ int faction_check_is_hostile(entity* acting_entity, entity* target_entity)
 
     e_entity_type acting_type;
     e_entity_type target_type;
-    e_faction_group acting_faction;
-    e_faction_group filtered_faction;
-    e_faction_group target_faction;
+    faction_group_mask_t acting_faction;
+    faction_group_mask_t filtered_faction;
+    faction_group_mask_t target_faction;
 
     if (!acting_entity || !target_entity)
     {
@@ -45218,7 +45257,7 @@ int faction_check_is_hostile(entity* acting_entity, entity* target_entity)
 * property. Ex. Hostile, direct damage, 
 * indirect damage.
 */
-int faction_check_player_verses(entity* acting_entity, entity* target_entity, e_faction_group faction_property)
+int faction_check_player_verses(entity* acting_entity, entity* target_entity, faction_group_mask_t faction_property)
 {
     if (!acting_entity || !target_entity)
     {
